@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaseBook &mdash; Official Chambers Documentation &amp; User Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    (function () {
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var qTheme = params.get('theme');
+        var stored = localStorage.getItem('casebook_theme') || localStorage.getItem('theme');
+        var theme = qTheme || (stored === 'dark' ? 'dark' : 'light');
+        if (theme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <style>
+    :root {
+      --primary: #1D2033;
+      --primary-light: #2C3047;
+      --accent: #A16207;
+      --accent-light: #E3B341;
+      --secondary: #1D4ED8;
+      --success: #15803D;
+      --warning: #C2410C;
+      --danger: #B91C1C;
+      --text: #0F172A;
+      --text-secondary: #475569;
+      --text-muted: #64748B;
+      --bg: #F5F6FA;
+      --card-bg: #FFFFFF;
+      --surface-raised: #F8FAFC;
+      --border: #E2E8F0;
+      --border-dark: #CBD5E1;
+      --brand-soft: rgba(227, 179, 65, 0.14);
+      --info-soft: #EFF6FF;
+      --success-soft: #F0FDF4;
+      --warning-soft: #FFF7ED;
+      --danger-soft: #FEF2F2;
+    }
+
+    [data-theme="dark"] {
+      --primary: #F5F4F0;
+      --primary-light: #E3B341;
+      --accent: #E3B341;
+      --accent-light: #EDC752;
+      --secondary: #60A5FA;
+      --success: #4ADE80;
+      --warning: #FB923C;
+      --danger: #F87171;
+      --text: #F5F4F0;
+      --text-secondary: #CBD5E1;
+      --text-muted: #94A3B8;
+      --bg: #12131A;
+      --card-bg: #1C1E29;
+      --surface-raised: #262838;
+      --border: #2E3140;
+      --border-dark: #3D4050;
+      --brand-soft: rgba(227, 179, 65, 0.14);
+      --info-soft: rgba(96, 165, 250, 0.14);
+      --success-soft: rgba(74, 222, 128, 0.14);
+      --warning-soft: rgba(251, 146, 60, 0.14);
+      --danger-soft: rgba(248, 113, 113, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background-color: var(--bg);
+      line-height: 1.65;
+      font-size: 14px;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    .lucide {
+      flex-shrink: 0;
+      vertical-align: middle;
+    }
+
+    /* Fixed Screen Navigation Bar */
+    .screen-header-bar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: #12141F;
+      color: #F5F4F0;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(227, 179, 65, 0.28);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+    }
+
+    .screen-header-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.2px;
+    }
+
+    .screen-header-brand svg {
+      color: #E3B341;
+    }
+
+    .screen-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .action-btn-primary {
+      background: #E3B341;
+      color: #1C1917;
+      border-color: #EDC752;
+    }
+
+    .action-btn-primary:hover {
+      background: #EDC752;
+    }
+
+    .action-btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #F5F4F0;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .action-btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Document Wrapper */
+    .doc-container {
+      max-width: 960px;
+      margin: 28px auto 56px;
+      padding: 0 20px;
+    }
+
+    .doc-page {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+      padding: 44px 52px;
+      margin-bottom: 40px;
+    }
+
+    /* Cover Section */
+    .doc-cover {
+      text-align: center;
+      padding: 36px 20px 32px;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 32px;
+      background: var(--surface-raised);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .chambers-crest {
+      width: 68px;
+      height: 68px;
+      margin: 0 auto 16px;
+      border-radius: 16px;
+      background: #1D2033;
+      border: 1px solid rgba(227, 179, 65, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #E3B341;
+      box-shadow: 0 8px 20px rgba(18, 20, 31, 0.22);
+    }
+
+    .doc-cover h1 {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 8px;
+    }
+
+    .doc-cover .doc-chambers-subtitle {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.3px;
+      margin-bottom: 10px;
+    }
+
+    .doc-cover .doc-tagline {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      max-width: 640px;
+      margin: 0 auto 18px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .doc-meta-badge-strip {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 7px 16px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .doc-meta-badge-strip span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .doc-meta-badge-strip svg {
+      color: var(--accent);
+    }
+
+    /* Headings & Content Typography */
+    h2 {
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--primary);
+      margin: 34px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h2 svg {
+      color: var(--accent);
+    }
+
+    h3 {
+      font-size: 15.5px;
+      font-weight: 700;
+      color: var(--primary-light);
+      margin: 22px 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 14px 0 8px;
+    }
+
+    p {
+      margin-bottom: 12px;
+      color: var(--text-secondary);
+      font-size: 13.5px;
+    }
+
+    ul, ol {
+      margin: 0 0 16px 22px;
+      color: var(--text-secondary);
+      font-size: 13.5px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    strong {
+      color: var(--text);
+    }
+
+    /* Tables & Responsive Wrapper */
+    .doc-table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 14px 0 22px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .doc-table {
+      width: 100%;
+      min-width: 540px;
+      border-collapse: collapse;
+      margin: 0;
+      font-size: 12.5px;
+    }
+
+    .doc-table th, .doc-table td {
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+      color: var(--text-secondary);
+    }
+
+    .doc-table th:last-child, .doc-table td:last-child {
+      border-right: none;
+    }
+
+    .doc-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .doc-table th {
+      background-color: var(--surface-raised);
+      color: var(--primary);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.4px;
+    }
+
+    .doc-table tbody tr:nth-child(even) {
+      background-color: var(--surface-raised);
+    }
+
+    /* Callouts */
+    .callout-box {
+      border-left: 4px solid var(--secondary);
+      background: var(--info-soft);
+      border-radius: 0 10px 10px 0;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .callout-box.success {
+      border-left-color: var(--success);
+      background: var(--success-soft);
+    }
+
+    .callout-box.warning {
+      border-left-color: var(--warning);
+      background: var(--warning-soft);
+    }
+
+    .callout-box.danger {
+      border-left-color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    .callout-box strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    /* Feature Grid */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin: 16px 0 22px;
+    }
+
+    .feature-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      background: var(--surface-raised);
+    }
+
+    .feature-card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      background: var(--brand-soft);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    .feature-card h4 {
+      margin: 0 0 6px 0;
+      font-size: 14px;
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .feature-card p {
+      margin: 0;
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+
+    /* Badges & Code */
+    .pill-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .pill-badge.green { background: var(--success-soft); color: var(--success); }
+    .pill-badge.blue { background: var(--info-soft); color: var(--secondary); }
+    .pill-badge.amber { background: var(--brand-soft); color: var(--accent); }
+    .pill-badge.red { background: var(--danger-soft); color: var(--danger); }
+
+    code {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      background: var(--surface-raised);
+      color: var(--text);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+    }
+
+    /* Workflow Diagram Boxes */
+    .workflow-strip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 14px 0;
+      flex-wrap: wrap;
+    }
+
+    .workflow-node {
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .workflow-node svg {
+      color: var(--accent);
+    }
+
+    .workflow-arrow {
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    /* Footer */
+    .doc-footer {
+      margin-top: 36px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    /* Print Stylesheet for Crisp A4 PDF Output */
+    @media print {
+      :root, [data-theme="dark"] {
+        --bg: #ffffff;
+        --card-bg: #ffffff;
+        --surface-raised: #f8fafc;
+        --text: #0f172a;
+        --text-secondary: #334155;
+        --text-muted: #64748b;
+        --primary: #1D2033;
+        --primary-light: #2C3047;
+        --accent: #A16207;
+        --border: #e2e8f0;
+      }
+      body {
+        background: #ffffff !important;
+        font-size: 10.5pt;
+      }
+      .screen-header-bar {
+        display: none !important;
+      }
+      .doc-container {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .doc-page {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin-bottom: 0 !important;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+        break-after: avoid;
+      }
+      .doc-table, .feature-card, .callout-box {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+      @page {
+        size: A4 portrait;
+        margin: 14mm 10mm 14mm 10mm;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .screen-header-bar {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+        padding: 12px 16px;
+      }
+      .screen-header-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .doc-container {
+        padding: 0 10px;
+        margin: 14px auto 30px;
+      }
+      .doc-page {
+        padding: 22px 16px;
+        border-radius: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Screen Top Bar -->
+  <header class="screen-header-bar">
+    <div class="screen-header-brand">
+      <svg class="lucide lucide-scale" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+      <span>CaseBook &mdash; Chambers Documentation &amp; User Manual</span>
+    </div>
+    <div class="screen-header-actions">
+      <button type="button" class="action-btn action-btn-primary" onclick="window.print()" title="Print this documentation or save as PDF">
+        <svg class="lucide lucide-printer" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+        <span>Print / Save PDF</span>
+      </button>
+      <a href="index.html#about" class="action-btn action-btn-secondary" title="Return to CaseBook Application">
+        <svg class="lucide lucide-arrow-left" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+        <span>Back to App</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="doc-container">
+    <article class="doc-page">
+
+      <!-- Cover Section -->
+      <section class="doc-cover">
+        <div class="chambers-crest" aria-hidden="true">
+          <svg class="lucide lucide-scale" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+        </div>
+        <h1>CaseBook &mdash; Case Management System</h1>
+        <div class="doc-chambers-subtitle">Chambers of Advocate Atul Kumar Mishra &bull; District &amp; High Courts</div>
+        <p class="doc-tagline">
+          Comprehensive Architectural Specification, Operational Workflow Guide, Module Manual &amp; Practice Repertoire for Advocates, Law Chambers, Munshis, and Judicial Registries.
+        </p>
+        <div class="doc-meta-badge-strip">
+          <span>
+            <svg class="lucide lucide-git-branch" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+            v2.0.0 &bull; Chambers v7.45
+          </span>
+          <span>&bull;</span>
+          <span>
+            <svg class="lucide lucide-calendar-check-2" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M21 14V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8"/><path d="M3 10h18"/><path d="m16 20 2 2 4-4"/></svg>
+            Edition: September 2026
+          </span>
+          <span>&bull;</span>
+          <span>
+            <svg class="lucide lucide-shield" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+            Role-Based (Admin &amp; Client Portal)
+          </span>
+          <span>&bull;</span>
+          <span>
+            <svg class="lucide lucide-database" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+            LocalStorage + Supabase PostgreSQL
+          </span>
+        </div>
+      </section>
+
+      <!-- Section 1: Executive Summary -->
+      <section id="executive-summary">
+        <h2>
+          <svg class="lucide lucide-landmark" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+          1. Executive Summary &amp; Practice Mission
+        </h2>
+        <p>
+          <strong>CaseBook</strong> is a digital legal practice platform engineered specifically for Indian advocates, law chambers, and munshis. It streamlines the day-to-day lifecycle of litigation &mdash; from case registration and judicial order tracking to automated daily cause list generation, hearing notifications via WhatsApp, court staff management, task checklists, and khata expense management.
+        </p>
+        <p>
+          Unlike generic software, CaseBook is structured around authentic Indian procedural law, providing tailored dynamic fields for <strong>Civil Suits, Criminal Cases, State/Police Matters, Family Law, Revenue Matters, Miscellaneous Petitions, and Criminal Complaints</strong>.
+        </p>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-card-icon">
+              <svg class="lucide lucide-folder-tree" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z"/><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z"/><path d="M3 5a2 2 0 0 0 2 2h3"/><path d="M3 3v13a2 2 0 0 0 2 2h3"/></svg>
+            </div>
+            <h4>Multi-Jurisdiction Filing</h4>
+            <p>Tailored legal registers for Civil, Criminal, State, Revenue, Family, Misc, and Complaint cases with Indian statutory acts.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">
+              <svg class="lucide lucide-scroll-text" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg>
+            </div>
+            <h4>Daily Cause List Board</h4>
+            <p>Dynamic court appearance board filtered by date and court. Instant A4 print-ready output with advocate signature blocks.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">
+              <svg class="lucide lucide-wallet" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
+            </div>
+            <h4>Accounts &amp; Khata Ledger</h4>
+            <p>Tracks client fee receipts, court work expenses (certified copies, stamps, clerkage), net savings margin, and WhatsApp closing.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-card-icon">
+              <svg class="lucide lucide-cloud-upload" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13v8"/><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="m8 17 4-4 4 4"/></svg>
+            </div>
+            <h4>Offline-First Cloud Sync</h4>
+            <p>Operates uninterrupted offline via Service Worker (<code>sw.js</code>) and SafeStorage, with two-way sync to Supabase PostgreSQL.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: System Architecture -->
+      <section id="system-architecture">
+        <h2>
+          <svg class="lucide lucide-network" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></svg>
+          2. Architecture &amp; Technical Foundations
+        </h2>
+        <p>
+          CaseBook is designed with a <strong>zero-build-step, modular vanilla web architecture</strong>. Every tab lives in its own isolated folder under <code>components/tabs/</code> with scoped CSS and dedicated JavaScript, ensuring fast load times, zero framework rot, and complete offline autonomy.
+        </p>
+
+        <div class="doc-table-wrapper">
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th>Layer</th>
+              <th>Modules &amp; Files</th>
+              <th>Purpose &amp; Characteristics</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>App Shell &amp; Design System</strong></td>
+              <td><code>index.html</code>, <code>styles/tokens.css</code>, <code>styles/layout.css</code>, <code>DESIGN.md</code></td>
+              <td>Advocate Charcoal &amp; Gold token engine supporting Light and Midnight Dark modes (<code>[data-theme="dark"]</code>) with strict tab isolation.</td>
+            </tr>
+            <tr>
+              <td><strong>Service Modules</strong></td>
+              <td><code>services/caseService.js</code>, <code>todoService.js</code>, <code>ancillaryService.js</code>, <code>supabaseClient.js</code></td>
+              <td>Clean separation of concerns for case CRUD, task checklists, courts/helpers, khata accounts, and Supabase integration.</td>
+            </tr>
+            <tr>
+              <td><strong>Utilities &amp; Custom UI</strong></td>
+              <td><code>components/custom-calendar.js</code>, <code>utils/caseNumberUtils.js</code>, <code>dateUtils.js</code>, <code>exportUtils.js</code>, <code>uiUtils.js</code></td>
+              <td>Custom Monday-first date picker, case number normalization, CSV exports, accessible tooltips, and safe storage wrappers.</td>
+            </tr>
+            <tr>
+              <td><strong>Offline Resilience (PWA)</strong></td>
+              <td><code>sw.js</code>, <code>manifest.webmanifest</code>, <code>serve.json</code></td>
+              <td>Service Worker caching and <code>localStorage</code>-first persistence so chambers can operate without internet inside court complexes.</td>
+            </tr>
+            <tr>
+              <td><strong>Cloud Backend</strong></td>
+              <td><code>supabase_schema/*.sql</code> (PostgreSQL + RLS)</td>
+              <td>Normalized tables for specialized case types, unified views, hearings, accounts, courts, helpers, and Row Level Security hardening.</td>
+            </tr>
+            <tr>
+              <td><strong>Testing &amp; QA</strong></td>
+              <td><code>vitest.config.js</code>, <code>playwright.config.mjs</code>, <code>tests/</code></td>
+              <td>Unit tests via Vitest (jsdom) and cross-viewport responsive audits via Playwright (desktop 1280px &amp; mobile 392px/412px).</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <!-- Section 3: User Roles & Access Control -->
+      <section id="roles-access">
+        <h2>
+          <svg class="lucide lucide-shield-check" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+          3. User Roles &amp; Access Hierarchy
+        </h2>
+        <p>
+          CaseBook strictly separates administrative chamber management (<code>index.html</code> + <code>admin.js</code>) from public/client case tracking (<code>login.html</code>):
+        </p>
+
+        <div class="callout-box success">
+          <strong>1. Admin Console (Chambers Advocate &amp; Staff)</strong>
+          Full read/write/delete privileges across all cases, hearing forward dates, courts directory, financial ledger, and cloud synchronization. Access is guarded by session authentication in <code>admin.js</code>.
+        </div>
+
+        <div class="callout-box">
+          <strong>2. Client Guest Tracking Portal</strong>
+          Read-only portal allowing litigants and clients to look up next hearing dates, court venues, and case status using their Case Number or Mobile Number. Confidential chamber notes, finances, and deletion actions are strictly concealed.
+        </div>
+      </section>
+
+      <!-- Section 4: Comprehensive Module Operations Guide -->
+      <section id="module-guide">
+        <h2>
+          <svg class="lucide lucide-layers" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+          4. Operational Guide by Module
+        </h2>
+
+        <h3 id="module-dashboard">4.1 Home &amp; New Home Dashboards</h3>
+        <p>
+          The <strong>Home Dashboard</strong> (and Zen <strong>New Home</strong> view) serves as the morning command center, summarizing practice health with live KPI counters:
+        </p>
+        <ul>
+          <li><strong>Total Active Matters:</strong> Overall pending litigation across all jurisdictions.</li>
+          <li><strong>Listed Today:</strong> Real-time count of cases listed on the current calendar date across all courts.</li>
+          <li><strong>Upcoming (7 Days):</strong> Hearings scheduled over the next 7 days.</li>
+          <li><strong>Disposed / Decided:</strong> Historical archive of completed matters.</li>
+        </ul>
+
+        <h3 id="module-registration">4.2 Dynamic Case Registration &amp; Case Operations</h3>
+        <p>
+          Case registration (<code>add</code> / <code>manage</code> tabs) dynamically adapts its input fields based on the selected Case Category:
+        </p>
+        <ul>
+          <li><strong>Civil Cases:</strong> Plaintiff vs Defendant, Suit Value (&#8377;), Court Fees paid, Act &amp; Section (CPC, Specific Relief, Succession), Process Stage.</li>
+          <li><strong>Criminal &amp; State Cases:</strong> State/Complainant vs Accused, Police Station, Crime/FIR Number, Penal Sections (BNS / IPC, BNSS / CrPC, NDPS, POCSO), Bail Status &amp; Surety.</li>
+          <li><strong>Family Disputes:</strong> Petitioner vs Respondent, Marriage Date, Conciliation / Mediation Stage, Maintenance orders.</li>
+          <li><strong>Revenue &amp; Misc / Complaint Cases:</strong> Land village, Khasra/Gata Number, SDM / Tehsildar / Revenue Board forum, or NI Act / complaint details.</li>
+        </ul>
+
+        <h3 id="module-registry">4.3 Cases Register, Undated, Detail &amp; Disposed</h3>
+        <p>
+          The <strong>Cases Register</strong> (<code>all</code>) houses the master case inventory with table and card views, alongside <strong>Undated Cases</strong> (<code>undated</code>), full <strong>Case Details</strong> dossier (<code>detail</code>), and <strong>Disposed Cases</strong> (<code>disposed</code>):
+        </p>
+        <div class="workflow-strip">
+          <span class="workflow-node">
+            <svg class="lucide lucide-search" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            Instant Search
+          </span>
+          <span class="workflow-arrow">&rarr;</span>
+          <span class="workflow-node">
+            <svg class="lucide lucide-filter" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            Court &amp; Type Filter
+          </span>
+          <span class="workflow-arrow">&rarr;</span>
+          <span class="workflow-node">
+            <svg class="lucide lucide-file-text" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+            Case Dossier
+          </span>
+          <span class="workflow-arrow">&rarr;</span>
+          <span class="workflow-node">
+            <svg class="lucide lucide-message-circle" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+            WhatsApp Notice
+          </span>
+        </div>
+
+        <h3 id="module-causelist">4.4 Daily Cause List &amp; Appearance Board</h3>
+        <p>
+          Generates the daily court board (<code>causelist</code>) for the advocate and junior team with 5-column sorting and expandable docket rows synchronized with Upcoming and Calendar views:
+        </p>
+        <ul>
+          <li><strong>Appearance Date Selector:</strong> Select any date using the custom calendar or quick preset pills.</li>
+          <li><strong>Court Filter:</strong> Filter the day's cause list by specific court or view the consolidated chambers list.</li>
+          <li><strong>Print Daily Cause List:</strong> Generates a formal A4 printable document (<code>components/print/print-templates.html</code>) with advocate seal and signature block.</li>
+          <li><strong>WhatsApp &amp; Pass-Over Slip:</strong> Send client updates or generate pass-over slips directly from each docket row.</li>
+        </ul>
+
+        <h3 id="module-calendar">4.5 Court Hearing Calendar &amp; Forward Dates</h3>
+        <p>
+          Visual monthly grid (<code>calendar</code>) with appearance counts per day. Clicking any date reveals all scheduled matters. The <strong>Forward Dates</strong> tab (<code>hearing</code>) allows rapid date assignment:
+        </p>
+        <ul>
+          <li>Enter Case Number or select from the auto-complete / find-and-replace list.</li>
+          <li>Select the next hearing date and the next judicial stage (e.g. Evidence, Arguments, Framing of Issues, Order).</li>
+          <li>Record judicial remarks and automatically update the case record, hearing timeline, and next cause list.</li>
+        </ul>
+
+        <h3 id="module-accounts">4.6 Paisa Manager (Chambers Accounts &amp; Khata)</h3>
+        <p>
+          A purpose-built legal accounting module (<code>paisa</code>) tracking daily client receipts and disbursements:
+        </p>
+        <div class="doc-table-wrapper">
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th>Nature</th>
+              <th>Description &amp; Typical Categories</th>
+              <th>Financial Effect</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="pill-badge blue">Work + Expense</span></td>
+              <td>Client fee received plus associated court work expenditure (certified copies, stamps, clerkage, typing).</td>
+              <td>Inflow (+) and Outflow (-); calculates exact Net Chamber Savings live.</td>
+            </tr>
+            <tr>
+              <td><span class="pill-badge green">Direct Client Fee</span></td>
+              <td>Pure advocate professional consultation fees, brief retention, or appearance fee.</td>
+              <td>100% Inflow (+); increments chamber net savings directly.</td>
+            </tr>
+            <tr>
+              <td><span class="pill-badge red">Chamber Expense</span></td>
+              <td>General practice overheads: stationery, photostat paper, process fees, and travel.</td>
+              <td>100% Outflow (-); deducted from net earnings.</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <p>
+          Features dual view modes (Visual Cards and Spreadsheet Table), CSV Export, A4 Printable Khata Ledger, and <strong>Daily Closing on WhatsApp</strong>.
+        </p>
+
+        <h3 id="module-courts">4.7 Court &amp; Helpers Directory</h3>
+        <p>
+          Manages judicial establishments (District Courts, Commercial Courts, Family Courts, High Court Benches) in <code>courts</code> and court staff contacts (Readers, Ahlmads, Peons, Munshis) in <code>helpers</code> with direct phone dialers and WhatsApp integration.
+        </p>
+
+        <h3 id="module-tasks">4.8 Task Deadlines &amp; To-Do Board</h3>
+        <p>
+          Tracks urgent legal filing deadlines, limitation dates, affidavit preparations, and certified copy follow-ups in <code>todo</code>, including priority tagging and checklist sub-steps.
+        </p>
+
+        <h3 id="module-transfers">4.9 Case Transfer Management</h3>
+        <p>
+          Maintains an immutable audit trail when cases are transferred between courts, benches, or districts via <code>transfer</code>, supporting single-case and bulk migrations.
+        </p>
+
+        <h3 id="module-cloudsync">4.10 Live CRUD &amp; Supabase Cloud Synchronization</h3>
+        <p>
+          Provides two-way data replication between local chamber devices and Supabase PostgreSQL via <code>livecrud</code> and <code>settings</code> (DB Studio), with live connection status and manual sync triggers.
+        </p>
+      </section>
+
+      <!-- Section 5: Productivity Cheatsheet -->
+      <section id="shortcuts">
+        <h2>
+          <svg class="lucide lucide-keyboard" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M8 12h.001"/><path d="M12 12h.001"/><path d="M16 12h.001"/><path d="M7 16h10"/></svg>
+          5. Productivity Cheatsheet &amp; Navigation
+        </h2>
+        <div class="doc-table-wrapper">
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th>Action / Navigation</th>
+              <th>Interface Trigger</th>
+              <th>Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Global Search</strong></td>
+              <td>Top navigation search bar</td>
+              <td>Instant live filtering across Case Number, Party Name, and Client Mobile.</td>
+            </tr>
+            <tr>
+              <td><strong>Quick Date Picker</strong></td>
+              <td><code>Alt + &darr;</code> or click any Date field</td>
+              <td>Opens CaseBook custom Monday-first date calendar popup.</td>
+            </tr>
+            <tr>
+              <td><strong>1-Click WhatsApp Notice</strong></td>
+              <td>WhatsApp action button on any Case Dossier</td>
+              <td>Drafts client appearance reminder with chamber header in WhatsApp.</td>
+            </tr>
+            <tr>
+              <td><strong>Print Daily Board</strong></td>
+              <td>Cause List &rarr; Print Button</td>
+              <td>Opens formal A4 printable court appearance docket.</td>
+            </tr>
+            <tr>
+              <td><strong>Daily Khata Summary</strong></td>
+              <td>Paisa Manager &rarr; Daily Closing on WhatsApp</td>
+              <td>Formats today's inflow, outflow, and net balance into a WhatsApp report.</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </section>
+
+      <!-- Section 6: Security & Maintenance -->
+      <section id="security-maintenance">
+        <h2>
+          <svg class="lucide lucide-shield" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+          6. Security, Backups &amp; Maintenance
+        </h2>
+        <div class="callout-box warning">
+          <strong>Recommended Daily Practice Routine</strong>
+          <ol>
+            <li><strong>Morning:</strong> Open <em>My Cause List</em> &rarr; Print / Save PDF of the day's court appearance board.</li>
+            <li><strong>During Court Hours:</strong> Record certified copy expenses, stamps, and fee receipts in <em>Paisa Manager</em>.</li>
+            <li><strong>Evening:</strong> Open <em>Forward Dates</em> to log the next hearing dates; click <em>Daily Closing on WhatsApp</em> to review the day's financial summary.</li>
+            <li><strong>Weekly:</strong> Open <em>Settings &amp; Cloud</em> &rarr; export CSV/JSON backup of cases and accounts ledger.</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- Document Footer -->
+      <footer class="doc-footer">
+        <div>
+          <strong>Chambers of Atul Kumar Mishra</strong> &bull; Advocate &amp; Legal Consultant
+        </div>
+        <div>
+          CaseBook v2.0.0 (Chambers v7.45) &bull; Updated September 2026
+        </div>
+      </footer>
+
+    </article>
+  </main>
+
+  <script>
+    if (new URLSearchParams(window.location.search).get('print') === '1') {
+      window.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () { window.print(); }, 400);
+      });
+    }
+  </script>
+</body>
+</html>

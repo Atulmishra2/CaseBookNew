@@ -1,0 +1,428 @@
+<!-- ==============================================================================
+     CASEBOOK DEDICATED CASE TRANSFER & RE-ASSIGNMENT TAB
+     Location: components/tabs/transfer/tab-transfer.html
+     Multi-Tab Parity: Conforms 100% to DESIGN.md and ui-rules.md (Lucide Icons Only)
+     ============================================================================== -->
+<div class="transfer-dashboard-container" data-transfer-scope>
+    <!-- Master Header: Judicial Transfer Crest Banner -->
+    <div class="transfer-header-row">
+        <div class="transfer-header-title-box">
+            <div class="section-icon-badge transfer-crest-badge" aria-hidden="true">
+                <svg class="lucide lucide-arrow-left-right" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+            </div>
+            <div>
+                <nav class="breadcrumb-bar transfer-breadcrumb" aria-label="Breadcrumb">
+                    <button type="button" class="crumb-link transfer-crumb-link" onclick="showTab('all', event)" title="Return to Cases Register">
+                        <svg class="lucide lucide-folder-archive" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+                        <span>Cases Register</span>
+                    </button>
+                    <svg class="lucide lucide-chevron-right crumb-sep transfer-crumb-sep" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    <span class="crumb-current transfer-crumb-current">Court Transfer</span>
+                </nav>
+                <h1 class="transfer-main-title">Case Transfer &amp; Re-assignment</h1>
+            </div>
+        </div>
+        <span id="transfersTotalCountBadge" class="case-badge civil">0 Transfers Logged</span>
+    </div>
+
+    <!-- Transfer Mode Switcher: Single Case vs Bulk Cases (Underline Tab Pattern) -->
+    <div class="transfer-nav-bar" role="tablist" aria-label="Transfer Mode Selection">
+        <button type="button" class="transfer-nav-tab-btn active" id="transferTabBtnSingle" onclick="switchTransferMode('single')" role="tab" aria-selected="true">
+            <svg class="lucide lucide-file-symlink" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 18 3-3-3-3"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M4 11V4a2 2 0 0 1 2-2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h7"/></svg>
+            <span>Single Case Transfer</span>
+        </button>
+        <button type="button" class="transfer-nav-tab-btn" id="transferTabBtnBulk" onclick="switchTransferMode('bulk')" role="tab" aria-selected="false">
+            <svg class="lucide lucide-layers" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+            <span>Bulk Cases Transfer</span>
+            <span class="badge-batch transfer-badge-new">BATCH</span>
+        </button>
+    </div>
+
+    <!-- ================= SINGLE CASE TRANSFER MODE ================= -->
+    <div id="singleTransferContainer">
+        <!-- Step 1: Search and Select Case Card -->
+        <div class="transfer-card">
+            <div class="transfer-step-header">
+                <div class="transfer-step-badge step-1-badge" aria-hidden="true">
+                    <svg class="lucide lucide-search" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </div>
+                <div>
+                    <h4 class="transfer-step-title">Select Case to Transfer</h4>
+                    <p class="transfer-step-sub">Enter Case Number, Plaintiff, Defendant, or Client Name to fetch the case.</p>
+                </div>
+            </div>
+            <div class="transfer-search-row">
+                <div class="input-with-icon transfer-search-input-wrap">
+                    <svg class="lucide lucide-search input-inner-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input type="text" id="transferSearchInput" class="transfer-search-input form-input" placeholder="e.g., CV-2023-00123 or John Doe" autocomplete="off">
+                </div>
+                <button type="button" id="transferSearchBtn" class="transfer-find-btn btn-glow" onclick="loadCaseForTransfer()">
+                    <svg class="lucide lucide-search" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <span>Find Case</span>
+                </button>
+            </div>
+            <div id="transferSearchStatus" class="update-status-msg"></div>
+        </div>
+
+        <!-- Selected Case Preview Summary (Hidden until selected) -->
+        <div id="transferSelectedCaseCard" class="transfer-selected-card" style="display: none;">
+            <div class="transfer-card-top">
+                <div class="transfer-case-pill-box">
+                    <span id="transferCaseTypeBadge" class="case-badge civil">CIVIL</span>
+                    <span class="transfer-case-no" id="transferCaseNoDisplay">—</span>
+                </div>
+                <span id="transferCaseStatusBadge" class="status-badge pending">Pending</span>
+            </div>
+            <h4 class="transfer-case-title" id="transferCaseTitleDisplay">—</h4>
+            <div class="transfer-meta-grid">
+                <div class="transfer-meta-item">
+                    <span class="meta-lbl">
+                        <svg class="lucide lucide-landmark" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> Current Assigned Court
+                    </span>
+                    <span class="meta-val" id="transferCurrentCourtDisplay">—</span>
+                </div>
+                <div class="transfer-meta-item">
+                    <span class="meta-lbl">
+                        <svg class="lucide lucide-user" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Client
+                    </span>
+                    <span class="meta-val" id="transferClientDisplay">—</span>
+                </div>
+                <div class="transfer-meta-item">
+                    <span class="meta-lbl">
+                        <svg class="lucide lucide-calendar" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> Next Hearing
+                    </span>
+                    <span class="meta-val" id="transferHearingDisplay">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Transfer Execution Form -->
+        <form id="transferCaseForm" class="transfer-execution-form" style="display: none;">
+            <input type="hidden" id="transferHiddenCaseNo" value="">
+            <input type="hidden" id="transferHiddenCaseType" value="">
+            <input type="hidden" id="transferHiddenFromCourt" value="">
+
+            <div class="transfer-card transfer-details-card">
+                <div class="transfer-step-header">
+                    <div class="transfer-step-badge step-2-badge" aria-hidden="true">
+                        <svg class="lucide lucide-scale" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+                    </div>
+                    <div>
+                        <h4 class="transfer-step-title">Court Transfer Details &amp; Judicial Order</h4>
+                        <p class="transfer-step-sub">Specify destination court, transfer order details, and grounds of transfer</p>
+                    </div>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label class="form-label" for="transferFromCourtDisplay">Transferred From (Current Court) <span class="required-star">*</span></label>
+                        <div class="input-with-icon">
+                            <svg class="lucide lucide-landmark input-inner-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+                            <input type="text" id="transferFromCourtDisplay" readonly class="form-input readonly-field" placeholder="Origin Court">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="transferToCourt">Transferred To (New Destination Court) <span class="required-star">*</span></label>
+                        <div class="input-with-icon">
+                            <svg class="lucide lucide-gavel input-inner-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-7.5 7.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L11 10"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/></svg>
+                            <select id="transferToCourt" required class="form-select status-select">
+                                <option value="">-- Select Destination Court --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="transferDate">Date of Transfer Order <span class="required-star">*</span></label>
+                        <input type="date" id="transferDate" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="transferOrderNo">Order / Reassignment Reference Number</label>
+                        <input type="text" id="transferOrderNo" class="form-input" placeholder="e.g. Order No. 248/DJ/2026 or Misc. App. 14/2026">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="transferAuthority">Ordering Authority / Presiding Judge</label>
+                        <input type="text" id="transferAuthority" class="form-input" placeholder="e.g. Hon'ble District &amp; Sessions Judge / High Court">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="transferDocLink">Transfer Order Sheet URL / Cloud Link</label>
+                        <div class="input-with-icon">
+                            <svg class="lucide lucide-link input-inner-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                            <input type="url" id="transferDocLink" class="form-input" placeholder="https://drive.google.com/file/d/...">
+                        </div>
+                    </div>
+
+                    <div class="form-group form-group-full">
+                        <label class="form-label" for="transferReason">Grounds / Reason for Transfer <span class="required-star">*</span></label>
+                        <div class="remarks-quick-chips">
+                            <button type="button" class="remarks-chip-btn" onclick="insertTransferReasonChip('Territorial jurisdiction change')">+ Territorial Jurisdiction</button>
+                            <button type="button" class="remarks-chip-btn" onclick="insertTransferReasonChip('Administrative reassignment by District Judge')">+ Admin Reassignment</button>
+                            <button type="button" class="remarks-chip-btn" onclick="insertTransferReasonChip('Transferred to Special Court / Fast Track')">+ Special / Fast Track Court</button>
+                            <button type="button" class="remarks-chip-btn" onclick="insertTransferReasonChip('Transferred on Application u/s 24 CPC')">+ Sec 24 CPC Transfer</button>
+                            <button type="button" class="remarks-chip-btn" onclick="insertTransferReasonChip('Transferred u/s 407/408 CrPC')">+ Sec 407/408 CrPC</button>
+                            <button type="button" class="remarks-chip-btn" onclick="insertTransferReasonChip('Recusal / Transfer to alternate bench')">+ Bench Recusal</button>
+                        </div>
+                        <input type="text" id="transferReason" class="form-input" required placeholder="Enter or choose grounds for transfer...">
+                    </div>
+
+                    <div class="form-group form-group-full">
+                        <label class="form-label" for="transferRemarks">Special Instructions / Remarks</label>
+                        <textarea id="transferRemarks" class="form-textarea" rows="2" placeholder="e.g. Records transmitted to new court, next listed date retained..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="transfer-actions-row">
+                <button type="submit" id="submitTransferBtn" class="btn primary-btn form-submit-btn transfer-submit-btn btn-glow">
+                    <svg class="lucide lucide-arrow-left-right" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+                    <span>Execute &amp; Save Court Transfer</span>
+                </button>
+                <button type="button" id="cancelTransferBtn" class="btn secondary-btn transfer-cancel-btn" onclick="resetTransferForm()">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================= BULK CASES TRANSFER MODE ================= -->
+    <div id="bulkTransferContainer" style="display: none;">
+        <!-- Bulk Step 1: Origin Court & Case Selection -->
+        <div class="transfer-card bulk-origin-card">
+            <div class="transfer-step-header">
+                <div class="transfer-step-badge step-1-badge" aria-hidden="true">
+                    <svg class="lucide lucide-landmark" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+                </div>
+                <div>
+                    <h4 class="transfer-step-title">Step 1: Select Origin Court &amp; Cases to Transfer</h4>
+                    <p class="transfer-step-sub">Choose current court to load active cases, then select multiple cases for batch transfer</p>
+                </div>
+            </div>
+
+            <div class="form-grid-2">
+                <div class="form-group">
+                    <label class="form-label" for="bulkTransferFromCourtTrigger">Current Origin Court <span class="required-star">*</span></label>
+                    <div class="custom-dropdown" id="bulkTransferFromCourtDropdown">
+                        <button type="button" class="custom-dropdown-trigger dropdown-trigger" id="bulkTransferFromCourtTrigger" aria-haspopup="listbox" aria-expanded="false">
+                            <span class="custom-dropdown-icon" aria-hidden="true">
+                                <svg class="lucide lucide-landmark" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+                            </span>
+                            <span class="custom-dropdown-label dropdown-label" id="bulkTransferFromCourtLabel">-- Select Origin Court to Load Cases --</span>
+                            <svg class="lucide lucide-chevron-down custom-dropdown-chevron dropdown-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                        </button>
+                        <div class="custom-dropdown-menu dropdown-menu" id="bulkTransferFromCourtMenu">
+                            <div class="custom-dropdown-search-wrap">
+                                <div class="custom-dropdown-search-inner">
+                                    <svg class="lucide lucide-search custom-dropdown-search-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                    <input type="text" class="custom-dropdown-search-input" placeholder="Search origin courts..." autocomplete="off">
+                                </div>
+                            </div>
+                            <ul class="custom-dropdown-list options-list custom-scrollbar" id="bulkTransferFromCourtList" role="listbox"></ul>
+                            <div class="custom-dropdown-empty hidden">No courts found.</div>
+                        </div>
+                        <select id="bulkTransferFromCourt" class="sr-only status-select" tabindex="-1" aria-hidden="true" onchange="onBulkOriginCourtChange()">
+                            <option value="">-- Select Origin Court to Load Cases --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="bulkCaseFilterInput">Quick Search / Filter Cases in Court</label>
+                    <div class="input-with-icon">
+                        <svg class="lucide lucide-search input-inner-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        <input type="text" id="bulkCaseFilterInput" class="form-input" placeholder="Filter by case #, party name, or stage..." oninput="filterBulkCasesTable()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Selection Action Bar -->
+            <div class="bulk-select-action-bar">
+                <label class="bulk-select-all-label">
+                    <input type="checkbox" id="bulkSelectAllCheckbox" onchange="toggleBulkSelectAll(this)">
+                    <span>Select All (<span id="bulkTotalOriginCases">0</span> cases in court)</span>
+                </label>
+                <div class="bulk-selection-pills">
+                    <span class="bulk-selection-count-pill">Selected: <strong id="bulkSelectedCount">0</strong></span>
+                    <button type="button" class="bulk-clear-btn" onclick="clearBulkCaseSelection()">
+                        <svg class="lucide lucide-x" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                        <span>Clear</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scrollable Cases Checklist Table -->
+            <div class="table-responsive transfer-table-wrapper transfer-bulk-table-wrapper">
+                <table class="transfer-bulk-table" id="bulkCasesTable">
+                    <thead>
+                        <tr>
+                            <th>Select</th>
+                            <th>Case Number</th>
+                            <th>Parties (Title)</th>
+                            <th>Type / Stage</th>
+                            <th>Next Hearing</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bulkCasesTableBody">
+                        <tr>
+                            <td colspan="5" class="transfer-empty-cell">
+                                Please select an Origin Court above to load its active cases.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bulk Step 2: Destination Court & Common Order Form -->
+        <form id="bulkTransferForm" class="transfer-execution-form" onsubmit="handleBulkTransferSubmit(event)">
+            <div class="transfer-card transfer-details-card">
+                <div class="transfer-step-header">
+                    <div class="transfer-step-badge step-2-badge" aria-hidden="true">
+                        <svg class="lucide lucide-gavel" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-7.5 7.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L11 10"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/></svg>
+                    </div>
+                    <div>
+                        <h4 class="transfer-step-title">Step 2: Destination Court &amp; Batch Transfer Order</h4>
+                        <p class="transfer-step-sub">Common transfer order details applied across all selected cases</p>
+                    </div>
+                </div>
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label class="form-label" for="bulkTransferToCourtTrigger">Transferred To (New Destination Court) <span class="required-star">*</span></label>
+                        <div class="custom-dropdown" id="bulkTransferToCourtDropdown">
+                            <button type="button" class="custom-dropdown-trigger dropdown-trigger" id="bulkTransferToCourtTrigger" aria-haspopup="listbox" aria-expanded="false">
+                                <span class="custom-dropdown-icon" aria-hidden="true">
+                                    <svg class="lucide lucide-gavel" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-7.5 7.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L11 10"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/></svg>
+                                </span>
+                                <span class="custom-dropdown-label dropdown-label" id="bulkTransferToCourtLabel">-- Select Destination Court --</span>
+                                <svg class="lucide lucide-chevron-down custom-dropdown-chevron dropdown-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                            </button>
+                            <div class="custom-dropdown-menu dropdown-menu" id="bulkTransferToCourtMenu">
+                                <div class="custom-dropdown-search-wrap">
+                                    <div class="custom-dropdown-search-inner">
+                                        <svg class="lucide lucide-search custom-dropdown-search-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                        <input type="text" class="custom-dropdown-search-input" placeholder="Search destination courts..." autocomplete="off">
+                                    </div>
+                                </div>
+                                <ul class="custom-dropdown-list options-list custom-scrollbar" id="bulkTransferToCourtList" role="listbox"></ul>
+                                <div class="custom-dropdown-empty hidden">No courts found.</div>
+                            </div>
+                            <select id="bulkTransferToCourt" class="sr-only status-select" tabindex="-1" aria-hidden="true">
+                                <option value="">-- Select Destination Court --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="bulkTransferDate">Date of Transfer Order <span class="required-star">*</span></label>
+                        <input type="date" id="bulkTransferDate" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="bulkTransferOrderNo">Order / Reference Number</label>
+                        <input type="text" id="bulkTransferOrderNo" class="form-input" placeholder="e.g. Admn. Order No. 512/DJ/2026">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="bulkTransferAuthority">Ordering Authority / Presiding Judge</label>
+                        <input type="text" id="bulkTransferAuthority" class="form-input" placeholder="e.g. Hon'ble Principal District &amp; Sessions Judge">
+                    </div>
+
+                    <div class="form-group form-group-full">
+                        <label class="form-label" for="bulkTransferDocLink">Common Transfer Order Sheet URL / Cloud Link</label>
+                        <div class="input-with-icon">
+                            <svg class="lucide lucide-link input-inner-icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                            <input type="url" id="bulkTransferDocLink" class="form-input" placeholder="https://drive.google.com/file/d/...">
+                        </div>
+                    </div>
+
+                    <div class="form-group form-group-full">
+                        <label class="form-label" for="bulkTransferReason">Grounds / Reason for Batch Transfer <span class="required-star">*</span></label>
+                        <div class="remarks-quick-chips">
+                            <button type="button" class="remarks-chip-btn" onclick="insertBulkTransferReasonChip('Territorial jurisdiction change')">+ Territorial Jurisdiction</button>
+                            <button type="button" class="remarks-chip-btn" onclick="insertBulkTransferReasonChip('Administrative reassignment by District Judge')">+ Admin Reassignment</button>
+                            <button type="button" class="remarks-chip-btn" onclick="insertBulkTransferReasonChip('Transferred to Special Court / Fast Track')">+ Special / Fast Track Court</button>
+                            <button type="button" class="remarks-chip-btn" onclick="insertBulkTransferReasonChip('Transferred on Application u/s 24 CPC')">+ Sec 24 CPC Transfer</button>
+                            <button type="button" class="remarks-chip-btn" onclick="insertBulkTransferReasonChip('Transferred u/s 407/408 CrPC')">+ Sec 407/408 CrPC</button>
+                            <button type="button" class="remarks-chip-btn" onclick="insertBulkTransferReasonChip('Bench Recusal / Rostering change')">+ Bench Recusal</button>
+                        </div>
+                        <input type="text" id="bulkTransferReason" class="form-input" required placeholder="Enter or choose grounds for batch transfer...">
+                    </div>
+
+                    <div class="form-group form-group-full">
+                        <label class="form-label" for="bulkTransferRemarks">Special Instructions / Remarks</label>
+                        <textarea id="bulkTransferRemarks" class="form-textarea" rows="2" placeholder="e.g. Batch files transmitted to new court, existing hearing schedule retained..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="transfer-actions-row">
+                <button type="submit" id="submitBulkTransferBtn" class="btn primary-btn form-submit-btn transfer-submit-btn btn-glow">
+                    <svg class="lucide lucide-layers" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+                    <span>Execute Batch Transfer (<span id="bulkSubmitBtnCount">0</span> Cases)</span>
+                </button>
+                <button type="button" class="btn secondary-btn transfer-cancel-btn" onclick="resetBulkTransferForm()">
+                    Reset
+                </button>
+            </div>
+            <div id="bulkTransferStatus" class="update-status-msg"></div>
+        </form>
+    </div>
+
+    <!-- Step 3: Recent Case Transfers Registry Card -->
+    <div class="transfer-card transfer-registry-card">
+        <div class="transfer-registry-header">
+            <div class="transfer-step-header">
+                <div class="transfer-step-badge registry-badge" aria-hidden="true">
+                    <svg class="lucide lucide-history" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+                </div>
+                <div>
+                    <h4 class="transfer-step-title">Recent Court Transfers Registry</h4>
+                    <p class="transfer-step-sub">Comprehensive history of case jurisdiction transitions and movement</p>
+                </div>
+            </div>
+            <div class="transfer-registry-actions">
+                <!-- Dual View Switcher (Docket Table vs Cards) -->
+                <div class="transfer-view-toggle view-toggle" id="transferRegistryViewToggle" role="group" aria-label="Switch display mode">
+                    <button type="button" class="view-btn active" id="transferRegistryToggleTable" onclick="setTransferRegistryViewMode('table')" title="Switch to Docket Table View" aria-label="Switch to Docket Table View">
+                        <svg class="lucide lucide-table-2" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg> <span>Table</span>
+                    </button>
+                    <button type="button" class="view-btn" id="transferRegistryToggleCards" onclick="setTransferRegistryViewMode('cards')" title="Switch to Cards View" aria-label="Switch to Cards View">
+                        <svg class="lucide lucide-layout-grid" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg> <span>Cards</span>
+                    </button>
+                </div>
+                <button type="button" class="transfer-refresh-btn" onclick="renderRecentTransfersTable()" title="Refresh Transfer Registry" aria-label="Refresh Transfer Registry">
+                    <svg class="lucide lucide-refresh-cw" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="transferRegistryTableView" class="table-responsive transfer-table-wrapper">
+            <table id="transfersRegistryTable" class="transfer-registry-table">
+                <thead>
+                    <tr>
+                        <th>TRANSFER DATE</th>
+                        <th>CASE NUMBER</th>
+                        <th>ORIGIN COURT &rarr; NEW COURT</th>
+                        <th>ORDER # / AUTHORITY</th>
+                        <th>REASON</th>
+                        <th>ACTION</th>
+                    </tr>
+                </thead>
+                <tbody id="transfersRegistryTableBody">
+                    <tr>
+                        <td colspan="6" class="transfer-empty-cell">No case transfers recorded yet.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile / Alternative Cards Grid -->
+        <div id="transferRegistryCardsView" class="transfer-registry-cards-view hidden">
+            <div id="transfersRegistryCardsContainer" class="transfer-cards-grid"></div>
+        </div>
+    </div>
+</div>

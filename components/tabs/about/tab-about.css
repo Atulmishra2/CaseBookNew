@@ -1,0 +1,569 @@
+/* ═══════════════════════════════════════════════════════════════════
+   CASEBOOK — ABOUT SYSTEM & CHAMBERS SOP (MODERN TOKEN-BASED DESIGN)
+   Location: components/tabs/about/tab-about.css
+   Strict Scoping: :is(#about, [data-about-scope])
+   Design Language: Advocate Charcoal & Gold (styles/tokens.css)
+   Zero Hard-Coded Colors • Full Dark Mode Support • Mobile-First
+   ═══════════════════════════════════════════════════════════════════ */
+
+:is(#about, [data-about-scope]) {
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  color: var(--fg-primary, #0f172a);
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:is(#about, [data-about-scope]) .about-dashboard-wrapper,
+:is(#about, [data-about-scope]) .about-page {
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ─── 1. Hero Card ─────────────────────────────────────────────── */
+:is(#about, [data-about-scope]) .about-hero {
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-top: 3px solid var(--accent, #a16207);
+  border-radius: var(--radius-xl, 14px);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(28, 25, 23, 0.06));
+}
+
+:is(#about, [data-about-scope]) .about-hero-main {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+:is(#about, [data-about-scope]) .about-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg, 10px);
+  background: var(--brand-soft, rgba(227, 179, 65, 0.12));
+  border: 1px solid var(--accent-soft, rgba(227, 179, 65, 0.25));
+  color: var(--accent, #a16207);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+:is(#about, [data-about-scope]) .about-hero-text {
+  min-width: 0;
+  flex: 1;
+}
+
+:is(#about, [data-about-scope]) .about-hero-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+:is(#about, [data-about-scope]) .about-hero h2 {
+  font-size: clamp(18px, 2.2vw, 22px);
+  font-weight: 800;
+  color: var(--fg-primary, #0f172a);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+:is(#about, [data-about-scope]) .about-version-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--brand-soft, rgba(227, 179, 65, 0.12));
+  border: 1px solid var(--accent-soft, rgba(227, 179, 65, 0.25));
+  color: var(--accent, #a16207);
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+:is(#about, [data-about-scope]) .about-tagline {
+  font-size: 13.5px;
+  color: var(--fg-secondary, #475569);
+  margin: 0;
+}
+
+:is(#about, [data-about-scope]) .about-status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle, #e2e8f0);
+}
+
+:is(#about, [data-about-scope]) .about-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-surface-raised, #f8fafc);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  color: var(--fg-secondary, #475569);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+:is(#about, [data-about-scope]) .about-status-chip svg {
+  color: var(--accent, #a16207);
+  flex-shrink: 0;
+}
+
+/* ─── 2. Documentation Banner & Actions ────────────────────────── */
+:is(#about, [data-about-scope]) .about-doc-banner {
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: var(--radius-xl, 14px);
+  padding: 22px 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(28, 25, 23, 0.06));
+}
+
+:is(#about, [data-about-scope]) .about-doc-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+:is(#about, [data-about-scope]) .about-doc-icon-wrap {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--feedback-info-soft, #eff6ff);
+  color: var(--feedback-info, #1d4ed8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+:is(#about, [data-about-scope]) .about-doc-content {
+  min-width: 0;
+  flex: 1;
+}
+
+:is(#about, [data-about-scope]) .about-doc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--brand-soft, rgba(227, 179, 65, 0.12));
+  color: var(--accent, #a16207);
+  font-size: 11.5px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+:is(#about, [data-about-scope]) .about-doc-content h3 {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--fg-primary, #0f172a);
+  margin: 0 0 6px 0;
+  letter-spacing: -0.01em;
+}
+
+:is(#about, [data-about-scope]) .about-doc-content p {
+  font-size: 13.5px;
+  color: var(--fg-secondary, #475569);
+  line-height: 1.55;
+  margin: 0 0 12px 0;
+}
+
+:is(#about, [data-about-scope]) .about-doc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+:is(#about, [data-about-scope]) .doc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--bg-surface-raised, #f8fafc);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  color: var(--fg-secondary, #475569);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+:is(#about, [data-about-scope]) .doc-tag svg {
+  color: var(--feedback-success, #15803d);
+  flex-shrink: 0;
+}
+
+/* 4-Column Responsive Action Grid */
+:is(#about, [data-about-scope]) .about-doc-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+:is(#about, [data-about-scope]) .doc-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  min-height: 52px;
+  border-radius: var(--radius-lg, 10px);
+  border: 1px solid var(--border-default, #cbd5e1);
+  background: var(--bg-surface-raised, #f8fafc);
+  color: var(--fg-primary, #0f172a);
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--transition-fast, 150ms ease),
+    border-color var(--transition-fast, 150ms ease),
+    box-shadow var(--transition-fast, 150ms ease),
+    background-color var(--transition-fast, 150ms ease);
+}
+
+:is(#about, [data-about-scope]) .doc-action-btn svg {
+  color: inherit;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+:is(#about, [data-about-scope]) .doc-action-btn:hover {
+  border-color: var(--accent, #a16207);
+  background: var(--bg-surface-hover, #f1f5f9);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md, 0 4px 14px -6px rgba(28, 25, 23, 0.14));
+}
+
+:is(#about, [data-about-scope]) .doc-action-btn.doc-btn-primary {
+  background: var(--action-bg, #a16207);
+  border-color: var(--btn-glow-border, #e3b341);
+  color: var(--action-fg, #ffffff);
+  box-shadow: var(--btn-glow-shadow, 0 0 16px -2px rgba(212, 160, 23, 0.45));
+}
+
+:is(#about, [data-about-scope]) .doc-action-btn.doc-btn-primary:hover {
+  background: var(--action-bg-hover, #854d0e);
+  border-color: var(--btn-glow-border, #e3b341);
+}
+
+:is(#about, [data-about-scope]) .doc-action-btn.doc-btn-primary small {
+  color: var(--action-fg, #ffffff);
+  opacity: 0.88;
+}
+
+:is(#about, [data-about-scope]) .doc-action-btn strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+:is(#about, [data-about-scope]) .doc-action-btn small {
+  display: block;
+  font-size: 11px;
+  color: var(--fg-tertiary, #64748b);
+  margin-top: 2px;
+}
+
+/* Chapter Explorer */
+:is(#about, [data-about-scope]) .about-chapters-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle, #e2e8f0);
+  margin-bottom: 10px;
+}
+
+:is(#about, [data-about-scope]) .about-chapters-header span {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-secondary, #475569);
+}
+
+:is(#about, [data-about-scope]) .about-chapters-header small {
+  font-size: 12px;
+  color: var(--fg-tertiary, #64748b);
+}
+
+:is(#about, [data-about-scope]) .about-doc-chapters-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+:is(#about, [data-about-scope]) .doc-chapter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  min-height: 40px;
+  background: var(--bg-surface-raised, #f8fafc);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-primary, #0f172a);
+  text-decoration: none;
+  transition: transform var(--transition-fast, 150ms ease),
+    border-color var(--transition-fast, 150ms ease),
+    color var(--transition-fast, 150ms ease),
+    background-color var(--transition-fast, 150ms ease);
+}
+
+:is(#about, [data-about-scope]) .doc-chapter-pill svg {
+  color: var(--accent, #a16207);
+  flex-shrink: 0;
+}
+
+:is(#about, [data-about-scope]) .doc-chapter-pill:hover {
+  border-color: var(--accent, #a16207);
+  background: var(--brand-soft, rgba(227, 179, 65, 0.12));
+  color: var(--accent, #a16207);
+  transform: translateY(-1px);
+}
+
+/* ─── 3. Collapsible Inline Manual Viewer ──────────────────────── */
+:is(#about, [data-about-scope]) .about-doc-inline-preview {
+  margin-bottom: 20px;
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-default, #cbd5e1);
+  border-radius: var(--radius-xl, 14px);
+  overflow: hidden;
+  box-shadow: var(--shadow-md, 0 4px 14px -6px rgba(28, 25, 23, 0.14));
+}
+
+:is(#about, [data-about-scope]) .about-doc-preview-header {
+  background: var(--slate-900, #1d2033);
+  color: #ffffff;
+  border-bottom: 1px solid var(--border-subtle, #e2e8f0);
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+:is(#about, [data-about-scope]) .about-doc-preview-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+:is(#about, [data-about-scope]) .about-doc-preview-title svg {
+  color: var(--gold-400, #e3b341);
+  flex-shrink: 0;
+}
+
+:is(#about, [data-about-scope]) .about-doc-preview-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+:is(#about, [data-about-scope]) .preview-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 11px;
+  min-height: 32px;
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  transition: background-color var(--transition-fast, 150ms ease);
+}
+
+:is(#about, [data-about-scope]) .preview-tool-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+:is(#about, [data-about-scope]) .preview-tool-btn.close-btn {
+  background: rgba(248, 113, 113, 0.2);
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+:is(#about, [data-about-scope]) .preview-tool-btn.close-btn:hover {
+  background: rgba(248, 113, 113, 0.32);
+}
+
+:is(#about, [data-about-scope]) .about-doc-iframe {
+  width: 100%;
+  height: 680px;
+  border: none;
+  display: block;
+  background: var(--bg-page, #f5f6fa);
+}
+
+/* ─── 4. Project Info & Architecture Grid ──────────────────────── */
+:is(#about, [data-about-scope]) .about-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+:is(#about, [data-about-scope]) .about-card {
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: var(--radius-xl, 14px);
+  padding: 20px;
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(28, 25, 23, 0.06));
+}
+
+:is(#about, [data-about-scope]) .about-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle, #e2e8f0);
+}
+
+:is(#about, [data-about-scope]) .about-card-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--brand-soft, rgba(227, 179, 65, 0.12));
+  color: var(--accent, #a16207);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+:is(#about, [data-about-scope]) .about-card h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fg-primary, #0f172a);
+}
+
+:is(#about, [data-about-scope]) .about-card p,
+:is(#about, [data-about-scope]) .about-card li {
+  font-size: 13px;
+  color: var(--fg-secondary, #475569);
+  line-height: 1.6;
+  margin: 0;
+}
+
+:is(#about, [data-about-scope]) .about-card ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+:is(#about, [data-about-scope]) .about-card code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--bg-surface-raised, #f8fafc);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  color: var(--fg-primary, #0f172a);
+}
+
+:is(#about, [data-about-scope]) .about-meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 9px 16px;
+  font-size: 13px;
+  margin: 0;
+}
+
+:is(#about, [data-about-scope]) .about-meta dt {
+  color: var(--fg-tertiary, #64748b);
+  font-weight: 700;
+}
+
+:is(#about, [data-about-scope]) .about-meta dd {
+  margin: 0;
+  color: var(--fg-primary, #0f172a);
+  font-weight: 500;
+}
+
+/* ─── 5. Dark Mode Enhancements ────────────────────────────────── */
+[data-theme="dark"] :is(#about, [data-about-scope]) .about-doc-preview-header {
+  background: var(--night-300, #171923);
+  border-bottom-color: var(--border-default, #2e3140);
+}
+
+[data-theme="dark"] :is(#about, [data-about-scope]) .about-card {
+  border-color: var(--border-default, #2e3140);
+}
+
+/* ─── 6. Responsive Breakpoints ────────────────────────────────── */
+@media (max-width: 960px) {
+  :is(#about, [data-about-scope]) .about-doc-actions,
+  :is(#about, [data-about-scope]) .about-doc-chapters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  :is(#about, [data-about-scope]) {
+    padding: 0 0 calc(88px + env(safe-area-inset-bottom, 16px)) 0 !important;
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  :is(#about, [data-about-scope]) .about-hero,
+  :is(#about, [data-about-scope]) .about-doc-banner,
+  :is(#about, [data-about-scope]) .about-card {
+    padding: 16px;
+  }
+
+  :is(#about, [data-about-scope]) .about-hero-main,
+  :is(#about, [data-about-scope]) .about-doc-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  :is(#about, [data-about-scope]) .about-doc-actions,
+  :is(#about, [data-about-scope]) .about-doc-chapters-grid,
+  :is(#about, [data-about-scope]) .about-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :is(#about, [data-about-scope]) .doc-action-btn,
+  :is(#about, [data-about-scope]) .doc-chapter-pill,
+  :is(#about, [data-about-scope]) button {
+    min-height: 44px !important;
+  }
+
+  :is(#about, [data-about-scope]) .about-doc-iframe {
+    height: 480px;
+  }
+}

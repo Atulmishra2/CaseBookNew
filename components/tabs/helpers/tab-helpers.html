@@ -1,0 +1,242 @@
+<div class="helpers-tab-container">
+  <!-- 1. Contacts Master Calendar Header Banner -->
+  <header class="board-head helpers-master-head contacts-header-section" data-helpers-scope>
+    <div class="head-left">
+      <h1 class="h1">
+        <span class="crest" aria-hidden="true">
+          <svg class="lucide lucide-contact" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 2v2"/><path d="M7 22v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><path d="M8 2v2"/><circle cx="12" cy="11" r="4"/><rect x="3" y="4" width="18" height="18" rx="2"/></svg>
+        </span>
+        <span class="h1-text contacts-title" id="contactsMainTitle">Contacts</span>
+      </h1>
+      <div class="sub" id="contactsHeaderSubline">
+        <b class="contacts-sub-desc">Chambers directory for court readers, clerks, stenos, and support staff</b>
+        <span class="contacts-sub-sep">·</span>
+        <span id="helpersTotalCountBadge" class="contacts-count-pill header-badge">0 Helpers Registered</span>
+      </div>
+    </div>
+
+    <div class="head-actions contacts-header-actions">
+      <!-- + Add Contact Primary Button (Inline; Icon-only on small screens) -->
+      <button type="button" class="contacts-add-btn primary-btn" onclick="openAddHelperModal()" title="Add Contact" aria-label="Add Contact">
+        <svg class="lucide lucide-plus" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        <span class="contacts-add-btn-text">Add Contact</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 2. Search & Filter Bar -->
+  <div class="contacts-toolbar">
+    <div class="contacts-search-box">
+      <svg class="lucide lucide-search" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" id="helperSearchInput" class="contacts-search-input" placeholder="Search by name, role, court, or mobile number..." oninput="filterHelpersTable(this.value)" enterkeyhint="search" autocomplete="off">
+    </div>
+
+    <div class="contacts-toolbar-filters">
+      <!-- Court Custom Dropdown (Zero Icon-Text Overlap) -->
+      <div class="contacts-custom-dropdown" id="contactsCourtCustomDropdown">
+        <button
+          type="button"
+          class="contacts-dropdown-trigger"
+          id="contactsCourtDropdownTrigger"
+          aria-haspopup="listbox"
+          aria-expanded="false"
+          onclick="toggleContactsCourtDropdown(event)"
+          title="Filter by court or forum"
+        >
+          <span class="contacts-dropdown-prefix-icon">
+            <svg class="lucide lucide-landmark" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+          </span>
+          <span class="contacts-dropdown-label" id="contactsCourtDropdownLabel">All Courts (All Forums)</span>
+          <span class="contacts-dropdown-suffix-icon">
+            <svg class="lucide lucide-chevron-down" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </span>
+        </button>
+
+        <div class="contacts-dropdown-menu" id="contactsCourtDropdownMenu">
+          <div class="contacts-dropdown-search-wrap">
+            <svg class="lucide lucide-search" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input
+              type="text"
+              class="contacts-dropdown-search-input"
+              id="contactsCourtDropdownSearch"
+              placeholder="Search court or forum..."
+              autocomplete="off"
+              oninput="filterContactsCourtDropdownItems(this.value)"
+              onclick="event.stopPropagation()"
+            />
+          </div>
+          <ul class="contacts-dropdown-list custom-scrollbar" id="contactsCourtDropdownList" role="listbox">
+            <!-- Populated dynamically by renderContactsCourtCustomDropdown() -->
+          </ul>
+        </div>
+
+        <!-- Hidden native select for backward compatibility & vitest tests -->
+        <select id="helperFilterCourtSelect" class="contacts-filter-select-hidden" onchange="filterHelpersTable()">
+          <option value="">All Courts (All Forums)</option>
+        </select>
+      </div>
+
+      <!-- Sync DB Button -->
+      <button type="button" id="helpersSyncDbBtn" class="contacts-secondary-btn" onclick="syncCourtHelpersFromCloud(true)" title="Fetch and synchronize from cloud database">
+        <svg class="lucide lucide-refresh-cw" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+        <span>Sync</span>
+      </button>
+
+      <!-- Export CSV Button -->
+      <button type="button" class="contacts-secondary-btn" onclick="exportHelpersCsv()" title="Export contacts list to CSV">
+        <svg class="lucide lucide-file-spreadsheet" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>
+        <span>Export</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Contacts Cards Grid -->
+  <div id="helpersCardsGrid" class="contacts-cards-grid">
+    <!-- Populated dynamically by renderHelpersTable() -->
+  </div>
+
+  <!-- 4. Add Contact Modal (Respecting CaseBook modal design system) -->
+  <div id="addHelperModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="addHelperModalTitle" onclick="if (event.target === this) closeAddHelperModal();">
+    <div class="modal-card helper-modal-card">
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <div class="modal-icon-badge">
+            <svg class="lucide lucide-user-plus" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+          </div>
+          <div>
+            <h3 id="addHelperModalTitle">Add Contact</h3>
+            <p class="modal-subtitle">Enter worker's full name, assigned court, position, and mobile number</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closeAddHelperModal()" aria-label="Close dialog">
+          <svg class="lucide lucide-x" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <form id="helperAddForm" onsubmit="handleSaveHelper(event)" class="helper-modal-form">
+        <div class="modal-body">
+          <div id="addHelperErrorMsg" class="helper-modal-error hidden"></div>
+          <div class="helper-form-grid">
+            <div class="helper-input-group">
+              <label for="helperNameInput" class="helper-field-label">Staff / Worker Name <span class="required-star">*</span></label>
+              <input type="text" id="helperNameInput" class="helper-input-field" placeholder="e.g. Ramesh Chandra" required autocomplete="off">
+            </div>
+            <div class="helper-input-group">
+              <label for="helperCourtSelect" class="helper-field-label">Court / Forum <span class="required-star">*</span></label>
+              <select id="helperCourtSelect" class="helper-select-field" required>
+                <option value="" disabled selected>Select Court / Forum...</option>
+              </select>
+            </div>
+            <div class="helper-input-group">
+              <label for="helperPositionInput" class="helper-field-label">Position / Role <span class="required-star">*</span></label>
+              <input type="text" id="helperPositionInput" class="helper-input-field" placeholder="e.g. Reader, Ahlmad, Peon, Steno" list="helperPositionSuggestions" required autocomplete="off">
+              <datalist id="helperPositionSuggestions">
+                <option value="Reader (पेशकार)">
+                <option value="Ahlmad (अहलमद)">
+                <option value="Stenographer (स्टेनो)">
+                <option value="Peon / Orderly (चपरासी)">
+                <option value="Naib Court (नायब कोर्ट)">
+                <option value="Munshi / Advocate Clerk (मुंशी)">
+                <option value="Process Server (समन तामीलकर्ता)">
+                <option value="Court Manager / Registrar">
+                <option value="Typist / Data Entry Operator">
+                <option value="Associate / Legal Assistant">
+              </datalist>
+            </div>
+            <div class="helper-input-group">
+              <label for="helperMobileInput" class="helper-field-label">Mobile Number <span class="required-star">*</span></label>
+              <input type="tel" id="helperMobileInput" class="helper-input-field" placeholder="10-digit mobile (e.g. 9876543210)" pattern="[0-9+\- ]{10,15}" required autocomplete="off">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="helper-btn-secondary" onclick="closeAddHelperModal()">Cancel</button>
+          <button type="submit" id="saveHelperSubmitBtn" class="helper-btn-primary">
+            <svg class="lucide lucide-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            <span>Save Contact</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. Edit Contact Modal -->
+  <div id="editHelperModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="editHelperModalTitle" onclick="if (event.target === this) closeEditHelperModal();">
+    <div class="modal-card helper-modal-card">
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <div class="modal-icon-badge">
+            <svg class="lucide lucide-file-pen" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22h6a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v10"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10.4 12.6a2 2 0 1 1 3 3L8 21l-4 1 1-4Z"/></svg>
+          </div>
+          <div>
+            <h3 id="editHelperModalTitle">Edit Contact Details</h3>
+            <p class="modal-subtitle">Update contact details and court assignment</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closeEditHelperModal()" aria-label="Close dialog">
+          <svg class="lucide lucide-x" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editHelperId">
+        <div id="editHelperErrorMsg" class="helper-modal-error hidden"></div>
+        <div class="helper-form-grid">
+          <div class="helper-input-group">
+            <label for="editHelperNameInput" class="helper-field-label">Staff / Worker Name <span class="required-star">*</span></label>
+            <input type="text" id="editHelperNameInput" class="helper-input-field" required>
+          </div>
+          <div class="helper-input-group">
+            <label for="editHelperCourtSelect" class="helper-field-label">Assigned Court <span class="required-star">*</span></label>
+            <select id="editHelperCourtSelect" class="helper-select-field" required></select>
+          </div>
+          <div class="helper-input-group">
+            <label for="editHelperPositionInput" class="helper-field-label">Position / Role <span class="required-star">*</span></label>
+            <input type="text" id="editHelperPositionInput" class="helper-input-field" list="helperPositionSuggestions" required>
+          </div>
+          <div class="helper-input-group">
+            <label for="editHelperMobileInput" class="helper-field-label">Mobile Number <span class="required-star">*</span></label>
+            <input type="tel" id="editHelperMobileInput" class="helper-input-field" pattern="[0-9+\- ]{10,15}" required>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="helper-btn-secondary" onclick="closeEditHelperModal()">Cancel</button>
+        <button type="button" id="saveEditHelperBtn" class="helper-btn-primary" onclick="confirmSaveEditedHelper()">
+          <svg class="lucide lucide-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          <span>Save Changes</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Delete Contact Confirmation Modal -->
+  <div id="deleteHelperModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="deleteHelperModalTitle" onclick="if (event.target === this) closeDeleteHelperModal();">
+    <div class="modal-card helper-modal-card helper-modal-card-sm">
+      <div class="modal-header modal-header-danger">
+        <div class="modal-header-info">
+          <div class="modal-icon-badge modal-badge-danger">
+            <svg class="lucide lucide-trash-2" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+          </div>
+          <div>
+            <h3 id="deleteHelperModalTitle">Delete Contact</h3>
+            <p class="modal-subtitle">This action cannot be undone</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closeDeleteHelperModal()" aria-label="Close dialog">
+          <svg class="lucide lucide-x" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="deleteHelperTargetId">
+        <p class="helper-delete-warning-text">Are you sure you want to remove <strong id="deleteHelperDisplayName">this staff member</strong> from your directory?</p>
+        <div id="deleteHelperErrorMsg" class="helper-modal-error hidden"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="helper-btn-secondary" onclick="closeDeleteHelperModal()">Cancel</button>
+        <button type="button" class="helper-btn-danger" onclick="executeDeleteHelperConfirm()">
+          <svg class="lucide lucide-trash-2" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+          <span>Delete Record</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

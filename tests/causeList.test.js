@@ -1,0 +1,595 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import '../utils/dateUtils.js';
+import '../admin.js';
+import '../components/tabs/causelist/tab-causelist.js';
+
+describe('components/tabs/causelist/tab-causelist.js - Cause List Tab Initialization & Controls', () => {
+  beforeEach(() => {
+    // Mount Cause List container
+    document.body.innerHTML = `
+      <div id="causeListTab">
+        ${window.__casebook_tabs["causelist"]}
+      </div>
+      <span id="causeListNavCount">0</span>
+    `;
+
+    window.courts = ['District Court', 'High Court Lucknow', 'NCLT', 'Family Court'];
+    window.allCaseRecords = [
+      {
+        caseNo: 'CS/102/2024',
+        caseName: 'ABC vs XYZ',
+        caseType: 'civil',
+        courtName: 'District Court',
+        nextHearing: '2026-11-05',
+        hearingProcess: 'Final Arguments'
+      },
+      {
+        criminalCaseNumber: 'CR/455/2025',
+        caseName: 'State vs Verma',
+        caseType: 'criminal',
+        criminalCourtName: 'High Court Lucknow',
+        nextHearing: '2026-11-05',
+        hearingProcess: 'Examination of Witness'
+      },
+      {
+        caseNo: 'IB/78/2023',
+        caseName: 'Mehta & Co. vs Sunrise Ltd',
+        caseType: 'corporate',
+        courtName: 'NCLT',
+        nextHearing: '2026-11-05',
+        hearingProcess: 'Admission Hearing'
+      }
+    ];
+  });
+
+  it('initCauseListTab populates court dropdown and initializes date', () => {
+    expect(window.initCauseListTab).toBeDefined();
+    window.initCauseListTab();
+
+    const dateInput = document.getElementById('causeListDateInput');
+    expect(dateInput).not.toBeNull();
+    expect(dateInput.value).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+
+    const dateDisplay = document.getElementById('causeListDateDisplay');
+    expect(dateDisplay).not.toBeNull();
+    expect(dateDisplay.textContent).toMatch(/^\d{2}\/\d{2}\/\d{4}$/);
+
+    const courtSelect = document.getElementById('causeListCourtFilterSelect');
+    expect(courtSelect).not.toBeNull();
+    expect(courtSelect.options.length).toBeGreaterThan(1);
+    expect(courtSelect.innerHTML).toContain('District Court');
+    expect(courtSelect.innerHTML).toContain('High Court Lucknow');
+  });
+
+  it('setCauseListDateOffset updates date input accurately with day offsets', () => {
+    expect(window.setCauseListDateOffset).toBeDefined();
+
+    // Today (0)
+    window.setCauseListDateOffset(0);
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    expect(document.getElementById('causeListDateInput').value).toBe(todayStr);
+    expect(document.getElementById('causeListDateDisplay').textContent).toBe(window.formatDateDMY(todayStr));
+
+    // Tomorrow (1)
+    window.setCauseListDateOffset(1);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+    expect(document.getElementById('causeListDateInput').value).toBe(tomorrowStr);
+    expect(document.getElementById('causeListDateDisplay').textContent).toBe(window.formatDateDMY(tomorrowStr));
+  });
+
+  it('renders quick date presets with correct spellings in segmented control and verifies mobile full-width 4-column grid rule in CSS', () => {
+    const chip0 = document.getElementById('causeListChip0');
+    const chip1 = document.getElementById('causeListChip1');
+    const chip2 = document.getElementById('causeListChip2');
+    const chip7 = document.getElementById('causeListChip7');
+
+    expect(chip0.textContent.trim()).toBe('Today');
+    expect(chip1.textContent.trim()).toBe('Tomorrow');
+    expect(chip2.textContent.trim()).toBe('+2 Days');
+    expect(chip7.textContent.trim()).toBe('Next Week');
+
+    const cssPath = path.resolve(__dirname, '../components/tabs/causelist/tab-causelist.css');
+    const css = fs.readFileSync(cssPath, 'utf-8');
+    expect(css).toContain('SEGMENTED BUTTON GROUP (QUICK DATE PRESETS)');
+    expect(css).toContain(':is(#causelist, #calendar) .chips');
+    expect(css).toContain('grid-template-columns: repeat(4, 1fr) !important;');
+    expect(css).toContain('width: 100% !important;');
+  });
+
+  it('verifies mobile responsive layout: Row 1 icon-only WA button, Row 2 50% controls, Row 3 100% equal grid', () => {
+    const cssPath = path.resolve(__dirname, '../components/tabs/causelist/tab-causelist.css');
+    const css = fs.readFileSync(cssPath, 'utf-8');
+
+    // Row 1: Header single row with icon-only WhatsApp button
+    expect(css).toContain('.board-head');
+    expect(css).toContain('flex-direction: row !important;');
+    expect(css).toContain('.wa-btn span');
+    expect(css).toContain('display: none !important;');
+
+    // Row 2: 50% width Datepicker and Court dropdown
+    expect(css).toContain('calc(50% - 4px)');
+
+    // Row 3: 100% full width equal grid for date chips
+    expect(css).toContain('grid-template-columns: repeat(4, 1fr) !important;');
+  });
+});
+
+describe('components/tabs/causelist/tab-causelist.js - renderCauseListTable Filtering & Sublines', () => {
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <div id="causeListTab">
+        ${window.__casebook_tabs["causelist"]}
+      </div>
+      <span id="causeListNavCount">0</span>
+    `;
+
+    window.allCaseRecords = [
+      {
+        caseNo: 'CS/102/2024',
+        caseName: 'ABC vs XYZ',
+        caseType: 'civil',
+        courtName: 'District Court',
+        nextHearing: '2026-11-05',
+        hearingProcess: 'Final Arguments'
+      },
+      {
+        criminalCaseNumber: 'CR/455/2025',
+        caseName: 'State vs Verma',
+        caseType: 'criminal',
+        criminalCourtName: 'High Court Lucknow',
+        nextHearing: '2026-11-05',
+        hearingProcess: 'Examination of Witness'
+      },
+      {
+        caseNo: 'IB/78/2023',
+        caseName: 'Mehta & Co. vs Sunrise Ltd',
+        caseType: 'corporate',
+        courtName: 'NCLT',
+        nextHearing: '2026-11-05',
+        hearingProcess: 'Admission Hearing'
+      }
+    ];
+  });
+
+  it('renders listed matters and accurate subline count for specified date', () => {
+    window.renderCauseListTable('2026-11-05', '');
+
+    const subline = document.getElementById('causeListSubline');
+    const footerCount = document.getElementById('causeListFooterCount');
+
+    expect(subline.textContent).toContain('3 listings');
+    expect(footerCount.textContent).toContain('Showing 3 of 3 cases');
+
+    const container = document.getElementById('causeListCardsContainer');
+    expect(container.innerHTML).toContain('ABC vs XYZ');
+    expect(container.innerHTML).toContain('#CS/102/2024');
+    expect(container.innerHTML).toContain('State vs Verma');
+  });
+
+  it('filters causes by specific court forum', () => {
+    window.renderCauseListTable('2026-11-05', 'District Court');
+
+    const subline = document.getElementById('causeListSubline');
+    expect(subline.textContent).toContain('1 listings');
+
+    const container = document.getElementById('causeListCardsContainer');
+    expect(container.innerHTML).toContain('ABC vs XYZ');
+    expect(container.innerHTML).not.toContain('State vs Verma');
+  });
+
+  it('shows clean empty state when no cases are listed on that date with quick recovery button', () => {
+    window.renderCauseListTable('2029-01-01', '');
+
+    const subline = document.getElementById('causeListSubline');
+    expect(subline.textContent).toContain('0 listings');
+
+    const container = document.getElementById('causeListCardsContainer');
+    expect(container.innerHTML).toContain('causelist-empty');
+    expect(container.innerHTML).toContain('No court appearances scheduled');
+
+    const emptyBtn = container.querySelector('.empty-action-btn');
+    expect(emptyBtn).not.toBeNull();
+    expect(emptyBtn.textContent).toContain("Back to Today's Schedule");
+    expect(emptyBtn.getAttribute('aria-label')).toBe("Back to Today's Schedule");
+  });
+});
+
+describe('components/tabs/causelist/tab-causelist.js - Judicial Grid Architecture & Accordion', () => {
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <div id="causeListTab">
+        ${window.__casebook_tabs["causelist"]}
+      </div>
+      <span id="causeListNavCount">0</span>
+    `;
+
+    window.allCaseRecords = [
+      {
+        caseNo: 'CS/102/2024',
+        caseName: 'ABC vs XYZ',
+        plaintiff: 'ABC',
+        defendant: 'XYZ',
+        partyName: 'ABC',
+        clientName: 'Ramesh',
+        clientNumber: '9839012345',
+        caseType: 'civil',
+        courtName: 'District Court',
+        nextHearing: '2026-11-05',
+        hearingProcess: 'Final Arguments',
+        remark: 'Previous hearing order memo — bring certified copy of Ex. P-7',
+        filingDate: '2024-03-12',
+        previousHearing: '2026-10-15',
+        previousProcess: 'Evidence'
+      }
+    ];
+  });
+
+  it('renders 5-column grid case head with chevron, title, court, case no and tag', () => {
+    window.renderCauseListTable('2026-11-05', '');
+
+    const container = document.getElementById('causeListCardsContainer');
+    const caseItem = container.querySelector('.case');
+    expect(caseItem).not.toBeNull();
+
+    const caseHead = caseItem.querySelector('.case-head');
+    expect(caseHead).not.toBeNull();
+    expect(caseHead.querySelector('.c-title').textContent).toBe('ABC vs XYZ');
+    expect(caseHead.querySelector('.c-court').textContent).toContain('District Court');
+    expect(caseHead.querySelector('.c-no').textContent).toBe('#CS/102/2024');
+    expect(caseHead.querySelector('.tag.civil').textContent).toBe('Civil');
+  });
+
+  it('renders rich expanded drawer with 3-column ledger table (Case/Client info, Hearing Stage/Previous, Remarks and 3 Actions)', () => {
+    window.renderCauseListTable('2026-11-05', '');
+
+    const container = document.getElementById('causeListCardsContainer');
+    const caseItem = container.querySelector('.case');
+    const body = caseItem.querySelector('.case-body');
+    expect(body).not.toBeNull();
+
+    // 1. 3-Column Ledger Grid structure
+    const ledger = body.querySelector('.meta-ledger-3col');
+    expect(ledger).not.toBeNull();
+    const cols = ledger.querySelectorAll('.ledger-col');
+    expect(cols.length).toBe(3);
+
+    // 2. Col 1: Client info & Direct contact links
+    expect(body.innerHTML).toContain('Client');
+    expect(body.innerHTML).toContain('Ramesh');
+    expect(body.innerHTML).toContain('tel:9839012345');
+    expect(body.innerHTML).toContain('wa.me/919839012345');
+
+    // 3. Col 2: Real Hearing Stage & Previous Date
+    expect(body.innerHTML).toContain('Stage');
+    expect(body.innerHTML).toContain('Final Arguments');
+    expect(body.innerHTML).toContain('Previous');
+    expect(body.innerHTML).toContain('Filing Date');
+
+    // 4. Col 3: Dedicated Remarks & Memo
+    expect(body.innerHTML).toContain('Remarks / Order Note');
+    expect(body.innerHTML).toContain('Previous hearing order memo — bring certified copy of Ex. P-7');
+
+    // 5. Removed fields must NOT exist in the DOM
+    expect(body.innerHTML).not.toContain('Representation');
+    expect(body.innerHTML).not.toContain('High Priority');
+
+    // 6. Action Buttons with accessibility aria-labels
+    const primBtn = body.querySelector('.act.primary');
+    expect(primBtn).not.toBeNull();
+    expect(primBtn.textContent).toContain('Update Next Date');
+    expect(primBtn.getAttribute('aria-label')).toContain('Update Next Date');
+
+    const secondaryActs = body.querySelectorAll('.act:not(.primary)');
+    expect(secondaryActs.length).toBe(4);
+    expect(secondaryActs[0].textContent).toContain('Open Dossier');
+    expect(secondaryActs[0].getAttribute('aria-label')).toContain('Open Full Dossier');
+    expect(secondaryActs[1].textContent).toContain('Call Client');
+    expect(secondaryActs[1].getAttribute('aria-label')).toContain('Call Client');
+    expect(secondaryActs[2].textContent).toContain('WhatsApp');
+    expect(secondaryActs[2].getAttribute('aria-label')).toContain('Send WhatsApp');
+    expect(secondaryActs[3].textContent).toContain('Pass-Over Slip');
+    expect(secondaryActs[3].getAttribute('aria-label')).toContain('Pass-Over Slip');
+  });
+
+  it('renders structured criminal forum rows (Police Station, FIR, u/s) with Stage in Column 1', () => {
+    window.allCaseRecords = [
+      {
+        id: 'crim-101',
+        caseNumber: 'ST.467/2022',
+        partyName: 'State of U.P. vs Geeta Devi',
+        clientName: 'Anurag Mishra',
+        clientNumber: '8700438967',
+        caseType: 'criminal',
+        courtName: 'A.C.J.M-FTC',
+        nextHearing: '2026-11-23',
+        hearingProcess: 'Appearance/Framing of Charge',
+        remark: 'Co-Accused: 1-Geeta Devi, 2-Neeshu, 3-Anurag',
+        policeStation: 'Kotwali Dhaurahara',
+        crimeNumber: '234/2022',
+        crimeSection: '323,504,506 IPC',
+        previousHearing: '2026-11-23',
+        previousProcess: 'Appearance/Framing of Charge'
+      }
+    ];
+
+    window.renderCauseListTable('2026-11-23', '');
+    const container = document.getElementById('causeListCardsContainer');
+    const caseItem = container.querySelector('.case');
+    const body = caseItem.querySelector('.case-body');
+
+    // Column 1 contains Client, Contact, Category, Stage
+    const col1 = body.querySelectorAll('.ledger-col')[0];
+    expect(col1.textContent).toContain('Client:');
+    expect(col1.textContent).toContain('Anurag Mishra');
+    expect(col1.textContent).toContain('Contact:');
+    expect(col1.textContent).toContain('8700438967');
+    expect(col1.textContent).toContain('Category:');
+    expect(col1.textContent).toContain('Criminal Matter');
+    expect(col1.textContent).toContain('Stage:');
+    expect(col1.textContent).toContain('Appearance/Framing of Charge');
+
+    // Column 2 contains Previous, Police Station, FIR, u/s
+    const col2 = body.querySelectorAll('.ledger-col')[1];
+    expect(col2.textContent).toContain('Previous:');
+    expect(col2.textContent).toContain('Police Station:');
+    expect(col2.textContent).toContain('Kotwali Dhaurahara');
+    expect(col2.textContent).toContain('FIR:');
+    expect(col2.textContent).toContain('234/2022');
+    expect(col2.textContent).toContain('u/s:');
+    expect(col2.textContent).toContain('323,504,506 IPC');
+  });
+
+  it('toggleCaseAccordion toggles open class on the case article', () => {
+    window.renderCauseListTable('2026-11-05', '');
+
+    const caseItem = document.querySelector('.case');
+    const headBtn = caseItem.querySelector('.case-head');
+
+    // Default table state collapsed
+    expect(caseItem.classList.contains('open')).toBe(false);
+
+    window.toggleCaseAccordion(headBtn);
+    expect(caseItem.classList.contains('open')).toBe(true);
+
+    window.toggleCaseAccordion(headBtn);
+    expect(caseItem.classList.contains('open')).toBe(false);
+  });
+
+  it('renders .act-text wrapper on action buttons for mobile icon-only adaptability and maintains footer inline structure', () => {
+    window.renderCauseListTable('2026-11-05', '');
+
+    const caseItem = document.querySelector('.case');
+    const head = caseItem.querySelector('.case-head');
+    expect(head.querySelector('.c-title')).not.toBeNull();
+    expect(head.querySelector('.c-court')).not.toBeNull();
+    expect(head.querySelector('.chev')).not.toBeNull();
+
+    // Verify act-text wrapper for mobile responsiveness
+    const actTexts = caseItem.querySelectorAll('.act .act-text');
+    expect(actTexts.length).toBeGreaterThanOrEqual(2);
+    expect(actTexts[0].textContent).toBe('Update Next Date');
+    expect(actTexts[1].textContent).toBe('Open Dossier');
+
+    // Verify table footer structure
+    const footer = document.querySelector('.foot');
+    expect(footer).not.toBeNull();
+    expect(footer.querySelector('#causeListFooterCount')).not.toBeNull();
+    expect(footer.querySelector('.foot-sync')).not.toBeNull();
+  });
+});
+
+describe('components/tabs/causelist/tab-causelist.js - WhatsApp & Pass-Over Slips', () => {
+  beforeEach(() => {
+    window.allCaseRecords = [
+      {
+        caseNo: 'CS/102/2024',
+        caseName: 'ABC vs XYZ',
+        plaintiff: 'ABC',
+        defendant: 'XYZ',
+        caseType: 'civil',
+        courtName: 'District Court',
+        nextHearing: '2026-11-05',
+        hearingProcess: 'Final Arguments',
+        clientName: 'Ramesh'
+      }
+    ];
+  });
+
+  it('sendDailyCauseListWhatsApp alerts when no hearings scheduled on date', () => {
+    const alertMock = vi.fn();
+    window.alert = alertMock;
+
+    window.currentCauseListDate = '2030-01-01';
+    window.sendDailyCauseListWhatsApp();
+
+    expect(alertMock).toHaveBeenCalled();
+  });
+
+  it('sendDailyCauseListWhatsApp opens WhatsApp URL when matters are listed', () => {
+    const openMock = vi.fn();
+    window.open = openMock;
+
+    window.currentCauseListDate = '2026-11-05';
+    window.sendDailyCauseListWhatsApp();
+
+    expect(openMock).toHaveBeenCalled();
+    const openedUrl = openMock.mock.calls[0][0];
+    expect(openedUrl).toContain('https://wa.me/?text=');
+    expect(decodeURIComponent(openedUrl)).toContain('ABC vs XYZ');
+    expect(decodeURIComponent(openedUrl)).toContain('CS/102/2024');
+  });
+
+  it('copyPassOverNote formats and copies court pass-over slip for advocate', () => {
+    expect(window.copyPassOverNote).toBeDefined();
+
+    let copiedText = '';
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: vi.fn().mockImplementation((text) => {
+          copiedText = text;
+          return Promise.resolve();
+        })
+      }
+    });
+
+    window.copyPassOverNote('CS/102/2024');
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalled();
+    expect(copiedText).toContain('*COURT PASS-OVER / HAZIRI REQUEST*');
+    expect(copiedText).toContain('District Court');
+    expect(copiedText).toContain('ABC vs XYZ');
+    expect(copiedText).toContain('Final Arguments');
+  });
+});
+
+describe('components/tabs/causelist/tab-causelist.js - customMadeDropDown1 & Collapsed Default State', () => {
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <div id="causeListTab">
+        ${window.__casebook_tabs["causelist"]}
+      </div>
+      <span id="causeListNavCount">0</span>
+    `;
+
+    window.courts = ['District Court', 'High Court Lucknow', 'NCLT'];
+    window.allCaseRecords = [
+      {
+        caseNo: 'CS/102/2024',
+        caseName: 'ABC vs XYZ',
+        caseType: 'civil',
+        courtName: 'District Court',
+        nextHearing: '2026-11-05',
+        hearingProcess: 'Final Arguments'
+      },
+      {
+        criminalCaseNumber: 'CR/455/2025',
+        caseName: 'State vs Verma',
+        caseType: 'criminal',
+        criminalCourtName: 'High Court Lucknow',
+        nextHearing: '2026-11-05',
+        hearingProcess: 'Examination of Witness'
+      }
+    ];
+  });
+
+  it('renders all matters initially collapsed (default table state collapsed)', () => {
+    window.renderCauseListTable('2026-11-05', '');
+
+    const cases = document.querySelectorAll('.case');
+    expect(cases.length).toBe(2);
+    cases.forEach((c) => {
+      expect(c.classList.contains('open')).toBe(false);
+      const head = c.querySelector('.case-head');
+      expect(head.getAttribute('aria-expanded')).toBe('false');
+    });
+  });
+
+  it('initializes customMadeDropDown1 for Court Filter and toggles dropdown menu', () => {
+    window.initCauseListTab();
+
+    const dd = document.getElementById('causeListCourtDropdown');
+    expect(dd).not.toBeNull();
+
+    const trigger = dd.querySelector('.custom-dropdown-trigger');
+    const menu = dd.querySelector('.custom-dropdown-menu');
+    const label = dd.querySelector('.custom-dropdown-label');
+    const list = dd.querySelector('.custom-dropdown-list');
+
+    expect(trigger).not.toBeNull();
+    expect(menu).not.toBeNull();
+    expect(label.textContent).toBe('All Courts');
+
+    // Options populated in custom list
+    const items = list.querySelectorAll('.custom-dropdown-item');
+    expect(items.length).toBeGreaterThanOrEqual(3);
+
+    // Toggle dropdown open/close
+    expect(menu.classList.contains('open')).toBe(false);
+    trigger.click();
+    expect(menu.classList.contains('open')).toBe(true);
+    trigger.click();
+    expect(menu.classList.contains('open')).toBe(false);
+  });
+
+  it('selects option in customMadeDropDown1, updates underlying select and filters table', () => {
+    window.initCauseListTab();
+
+    const dd = document.getElementById('causeListCourtDropdown');
+    const trigger = dd.querySelector('.custom-dropdown-trigger');
+    const list = dd.querySelector('.custom-dropdown-list');
+    const select = document.getElementById('causeListCourtFilterSelect');
+
+    trigger.click();
+    const courtItem = Array.from(list.querySelectorAll('.custom-dropdown-item')).find(
+      (el) => el.getAttribute('data-value') === 'District Court'
+    );
+    expect(courtItem).toBeDefined();
+
+    courtItem.click();
+
+    expect(select.value).toBe('District Court');
+    expect(dd.querySelector('.custom-dropdown-label').textContent).toBe('District Court');
+
+    const container = document.getElementById('causeListCardsContainer');
+    expect(container.innerHTML).toContain('ABC vs XYZ');
+    expect(container.innerHTML).not.toContain('State vs Verma');
+  });
+
+  it('refactors court dropdown to match custom design with searchbar and with keyboard/escape accessibility', () => {
+    window.initCauseListTab();
+
+    const dd = document.getElementById('causeListCourtDropdown');
+    const trigger = dd.querySelector('.custom-dropdown-trigger');
+    const menu = dd.querySelector('.custom-dropdown-menu');
+    const chevron = dd.querySelector('.custom-dropdown-chevron');
+    const searchInput = dd.querySelector('.custom-dropdown-search-input');
+    const list = dd.querySelector('.custom-dropdown-list');
+    const emptyState = dd.querySelector('.custom-dropdown-empty');
+
+    // 1. Searchbar is present as requested
+    expect(searchInput).not.toBeNull();
+    expect(searchInput.id).toBe('causeListCourtDropdownSearch');
+
+    // 2. Trigger structure: label and right-aligned chevron
+    expect(trigger.querySelector('.custom-dropdown-label')).not.toBeNull();
+    expect(chevron).not.toBeNull();
+
+    // 3. Open dropdown and check transition classes
+    trigger.click();
+    expect(menu.classList.contains('open')).toBe(true);
+    expect(menu.classList.contains('opacity-100')).toBe(true);
+    expect(chevron.classList.contains('rotate-180')).toBe(true);
+
+    // 4. Live search filtering
+    searchInput.value = 'Lucknow';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    const visibleLucknow = list.querySelectorAll('.custom-dropdown-item:not([style*="display: none"])');
+    expect(visibleLucknow.length).toBe(1);
+    expect(visibleLucknow[0].textContent).toContain('Lucknow');
+
+    searchInput.value = 'NonExistentCourtForum';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    const visibleNone = list.querySelectorAll('.custom-dropdown-item:not([style*="display: none"])');
+    expect(visibleNone.length).toBe(0);
+    expect(emptyState.classList.contains('hidden')).toBe(false);
+
+    // 5. Escape key closes dropdown
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(menu.classList.contains('open')).toBe(false);
+    expect(menu.classList.contains('opacity-0')).toBe(true);
+    expect(chevron.classList.contains('rotate-180')).toBe(false);
+
+    // 6. CSS verifies primitives usage and custom scrollbar
+    const cssPath = path.resolve(__dirname, '../components/tabs/causelist/tab-causelist.css');
+    const css = fs.readFileSync(cssPath, 'utf-8');
+    expect(css).toContain('.causelist-court-custom-dropdown .custom-dropdown-trigger');
+    expect(css).toContain('var(--bg-surface)');
+    expect(css).toContain('var(--border-default)');
+    expect(css).toContain('.causelist-court-custom-dropdown .custom-scrollbar');
+  });
+});

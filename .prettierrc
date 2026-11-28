@@ -1,0 +1,9 @@
+{
+  "tabWidth": 2,
+  "printWidth": 100,
+  "semi": true,
+  "singleQuote": false,
+  "htmlWhitespaceSensitivity": "ignore",
+  "plugins": ["prettier-plugin-embed"],
+  "embeddedHtmlComments": ["html", "HTML", "xhtml", "XHTML"]
+}

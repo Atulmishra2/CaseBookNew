@@ -1,0 +1,311 @@
+window.__casebook_tabs = window.__casebook_tabs || {};
+window.__casebook_tabs['about'] = `<div class="about-dashboard-wrapper" data-about-scope id="aboutDashboardWrapper">
+<div class="about-page">
+    <!-- Hero Header -->
+    <header class="about-hero">
+        <div class="about-hero-main">
+            <div class="about-logo" aria-hidden="true">
+                <svg class="lucide lucide-scale" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+            </div>
+            <div class="about-hero-text">
+                <div class="about-hero-title-row">
+                    <h2>CaseBook &mdash; Case Management System</h2>
+                    <span class="about-version-pill">v2.0.0 &bull; Chambers v7.45</span>
+                </div>
+                <p class="about-tagline">Chambers Practice SOP &bull; Complete Project Documentation &bull; Modular PWA Architecture</p>
+            </div>
+        </div>
+        <div class="about-status-strip" aria-label="System Capabilities">
+            <span class="about-status-chip">
+                <svg class="lucide lucide-wifi-off" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/></svg>
+                <span>Offline-First PWA</span>
+            </span>
+            <span class="about-status-chip">
+                <svg class="lucide lucide-database" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+                <span>LocalStorage + Supabase</span>
+            </span>
+            <span class="about-status-chip">
+                <svg class="lucide lucide-shield-check" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+                <span>Role-Based Security</span>
+            </span>
+        </div>
+    </header>
+
+    <!-- Chambers Documentation & User Manual Hub -->
+    <section class="about-doc-banner" aria-labelledby="aboutDocHeading">
+        <div class="about-doc-main">
+            <div class="about-doc-icon-wrap" aria-hidden="true">
+                <svg class="lucide lucide-book-marked" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M10 2v8l3-2 3 2V2"/></svg>
+            </div>
+            <div class="about-doc-content">
+                <div class="about-doc-badge">
+                    <svg class="lucide lucide-file-text" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                    <span>Official Chambers Manual &bull; v7.45</span>
+                </div>
+                <h3 id="aboutDocHeading">CaseBook Complete Documentation &amp; Practice Manual</h3>
+                <p>Official Chambers Standard Operating Procedure (SOP) covering system architecture, all practice modules, dynamic case registration, daily cause lists, hearing calendar, financial khata, Supabase cloud sync, security protocols, and keyboard shortcuts.</p>
+                <div class="about-doc-tags">
+                    <span class="doc-tag">
+                        <svg class="lucide lucide-check" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                        <span>Standard Operating Procedure</span>
+                    </span>
+                    <span class="doc-tag">
+                        <svg class="lucide lucide-shield-check" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+                        <span>RLS &amp; Session Security</span>
+                    </span>
+                    <span class="doc-tag">
+                        <svg class="lucide lucide-smartphone" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+                        <span>PWA Offline Guide</span>
+                    </span>
+                    <span class="doc-tag">
+                        <svg class="lucide lucide-printer" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                        <span>A4 Printable / Save as PDF</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Primary Action Buttons -->
+        <div class="about-doc-actions">
+            <button type="button" class="doc-action-btn doc-btn-primary" id="toggleDocPreviewBtn" onclick="toggleDocInlinePreview()" aria-expanded="false" aria-controls="aboutDocInlinePreviewContainer" title="Toggle embedded documentation reader">
+                <svg class="lucide lucide-book-open" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                <span>
+                    <strong id="docPreviewBtnText">Read Manual Here</strong>
+                    <small>In-App Instant Reader</small>
+                </span>
+            </button>
+            <a href="documentation.html" target="_blank" rel="noopener noreferrer" class="doc-action-btn doc-btn-view" title="Open Interactive Web Manual in New Window">
+                <svg class="lucide lucide-external-link" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                <span>
+                    <strong>Open Full Manual</strong>
+                    <small>Interactive Web Reader</small>
+                </span>
+            </a>
+            <button type="button" class="doc-action-btn doc-btn-print" onclick="window.open('documentation.html?print=1', '_blank')" title="Print or Save Official A4 Documentation as PDF">
+                <svg class="lucide lucide-printer" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                <span>
+                    <strong>Print / Save PDF</strong>
+                    <small>A4 Printer-Friendly Format</small>
+                </span>
+            </button>
+            <button type="button" class="doc-action-btn doc-btn-copy" id="copySystemInfoBtn" onclick="copyCaseBookSystemInfo()" title="Copy system version & runtime diagnostics">
+                <svg class="lucide lucide-copy" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                <span>
+                    <strong id="copySystemInfoBtnText">Copy System Info</strong>
+                    <small>Diagnostics &amp; Build Details</small>
+                </span>
+            </button>
+        </div>
+
+        <!-- Quick Documentation Chapter Explorer -->
+        <div class="about-chapters-header">
+            <span>Quick Chapter Explorer</span>
+            <small>Jump directly to any section of the Chambers Manual</small>
+        </div>
+        <div class="about-doc-chapters-grid">
+            <a href="documentation.html#executive-summary" target="_blank" rel="noopener noreferrer" class="doc-chapter-pill">
+                <svg class="lucide lucide-landmark" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
+                <span>1. Practice Mission</span>
+            </a>
+            <a href="documentation.html#system-architecture" target="_blank" rel="noopener noreferrer" class="doc-chapter-pill">
+                <svg class="lucide lucide-cpu" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
+                <span>2. Architecture &amp; PWA</span>
+            </a>
+            <a href="documentation.html#roles-access" target="_blank" rel="noopener noreferrer" class="doc-chapter-pill">
+                <svg class="lucide lucide-shield" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+                <span>3. Auth &amp; Roles</span>
+            </a>
+            <a href="documentation.html#module-registration" target="_blank" rel="noopener noreferrer" class="doc-chapter-pill">
+                <svg class="lucide lucide-file-plus" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 12v6"/></svg>
+                <span>4. Dynamic Case Filing</span>
+            </a>
+            <a href="documentation.html#module-causelist" target="_blank" rel="noopener noreferrer" class="doc-chapter-pill">
+                <svg class="lucide lucide-clipboard-list" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+                <span>5. Cause List &amp; Board</span>
+            </a>
+            <a href="documentation.html#module-calendar" target="_blank" rel="noopener noreferrer" class="doc-chapter-pill">
+                <svg class="lucide lucide-calendar" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+                <span>6. Calendar &amp; Forwarding</span>
+            </a>
+            <a href="documentation.html#module-accounts" target="_blank" rel="noopener noreferrer" class="doc-chapter-pill">
+                <svg class="lucide lucide-wallet" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>
+                <span>7. Accounts &amp; Khata</span>
+            </a>
+            <a href="documentation.html#shortcuts" target="_blank" rel="noopener noreferrer" class="doc-chapter-pill">
+                <svg class="lucide lucide-keyboard" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M8 12h.001"/><path d="M12 12h.001"/><path d="M16 12h.001"/><path d="M7 16h10"/></svg>
+                <span>8. Shortcuts &amp; SOP</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- Collapsible Inline Manual Viewer -->
+    <div id="aboutDocInlinePreviewContainer" class="about-doc-inline-preview" style="display: none;">
+        <div class="about-doc-preview-header">
+            <div class="about-doc-preview-title">
+                <svg class="lucide lucide-book-open" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                <span>In-App Documentation Reader &mdash; CaseBook Chambers SOP</span>
+            </div>
+            <div class="about-doc-preview-tools">
+                <button type="button" class="preview-tool-btn" onclick="window.open('documentation.html?print=1', '_blank')" title="Print or Save PDF">
+                    <svg class="lucide lucide-printer" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                    <span>Print / PDF</span>
+                </button>
+                <a href="documentation.html" target="_blank" rel="noopener noreferrer" class="preview-tool-btn" title="Open in New Tab">
+                    <svg class="lucide lucide-external-link" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                    <span>Fullscreen</span>
+                </a>
+                <button type="button" class="preview-tool-btn close-btn" onclick="toggleDocInlinePreview()" title="Close Preview">
+                    <svg class="lucide lucide-x" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    <span>Close</span>
+                </button>
+            </div>
+        </div>
+        <iframe id="aboutDocIframe" class="about-doc-iframe" title="CaseBook System Documentation" data-src="documentation.html" loading="lazy"></iframe>
+    </div>
+
+    <!-- System Architecture & Project Details Grid -->
+    <div class="about-grid">
+        <article class="about-card">
+            <div class="about-card-head">
+                <span class="about-card-icon">
+                    <svg class="lucide lucide-info" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                </span>
+                <h4>About the Project</h4>
+            </div>
+            <p>CaseBook is an offline-first Progressive Web App (PWA) engineered for Indian advocates, law chambers, and munshis to manage their complete litigation practice &mdash; case registers, daily cause lists, hearing schedules, court &amp; helper directories, client dossiers, financial khata, and deadlines &mdash; seamlessly online or offline.</p>
+        </article>
+
+        <article class="about-card">
+            <div class="about-card-head">
+                <span class="about-card-icon">
+                    <svg class="lucide lucide-layers" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+                </span>
+                <h4>Key Practice Modules</h4>
+            </div>
+            <ul class="about-module-list">
+                <li><strong>Home &amp; New Home:</strong> Executive KPIs, today's hearings &amp; quick actions</li>
+                <li><strong>Cause List &amp; Upcoming:</strong> Daily appearance board &amp; 7-day horizon</li>
+                <li><strong>Calendar &amp; Forward Dates:</strong> Monthly scheduler &amp; 1-click date updates</li>
+                <li><strong>Case Registers:</strong> All Cases, Undated, Dossier Detail &amp; Disposed archive</li>
+                <li><strong>Paisa Manager:</strong> Chambers Khata, fee receipts &amp; WhatsApp closing</li>
+                <li><strong>Courts &amp; Helpers:</strong> Judicial directory, readers &amp; munshi contacts</li>
+                <li><strong>To-Do &amp; Transfers:</strong> Deadlines, sub-tasks &amp; court transfer audit log</li>
+                <li><strong>Live CRUD &amp; Settings:</strong> Supabase cloud sync, CSV export &amp; theme engine</li>
+            </ul>
+        </article>
+
+        <article class="about-card">
+            <div class="about-card-head">
+                <span class="about-card-icon">
+                    <svg class="lucide lucide-code-2" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
+                </span>
+                <h4>Technology &amp; Architecture</h4>
+            </div>
+            <ul class="about-tech-list">
+                <li><strong>Frontend:</strong> Vanilla HTML5, CSS3 Custom Properties &amp; ES Modules (zero build step)</li>
+                <li><strong>Design System:</strong> Advocate Charcoal &amp; Gold token engine (Light &amp; Midnight Dark)</li>
+                <li><strong>Offline Engine:</strong> Service Worker (<code>sw.js</code>) + <code>localStorage</code>-first persistence</li>
+                <li><strong>Cloud Sync:</strong> Optional Supabase PostgreSQL with Row Level Security (RLS)</li>
+                <li><strong>Quality Gate:</strong> Vitest unit suite &amp; Playwright cross-viewport responsive tests</li>
+            </ul>
+        </article>
+
+        <article class="about-card">
+            <div class="about-card-head">
+                <span class="about-card-icon">
+                    <svg class="lucide lucide-shield-check" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+                </span>
+                <h4>Developer, Security &amp; License</h4>
+            </div>
+            <dl class="about-meta">
+                <dt>Developer</dt><dd>Atul Kumar Mishra &mdash; Advocate &amp; Developer</dd>
+                <dt>Jurisdiction</dt><dd>District &amp; High Courts</dd>
+                <dt>Release</dt><dd>v2.0.0 &bull; Chambers Manual v7.45 (Sept 2026)</dd>
+                <dt>Auth Model</dt><dd>Role-Based Admin Console &amp; Read-Only Client Portal</dd>
+                <dt>License</dt><dd>ISC / Chambers Proprietary Documentation</dd>
+            </dl>
+        </article>
+    </div>
+</div>
+</div>
+`;
+
+/**
+ * Toggles the embedded Chambers Documentation reader inside the About tab.
+ * Lazy-loads documentation.html on first open and syncs the active theme.
+ */
+window.toggleDocInlinePreview = function toggleDocInlinePreview() {
+    const container = document.getElementById('aboutDocInlinePreviewContainer');
+    const toggleBtn = document.getElementById('toggleDocPreviewBtn');
+    const btnText = document.getElementById('docPreviewBtnText');
+    const iframe = document.getElementById('aboutDocIframe');
+
+    if (!container || !toggleBtn) return;
+
+    const isHidden = container.style.display === 'none' || container.style.display === '';
+    if (isHidden) {
+        if (iframe && !iframe.getAttribute('src')) {
+            const baseSrc = iframe.getAttribute('data-src') || 'documentation.html';
+            const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+            iframe.setAttribute('src', `${baseSrc}?theme=${theme}`);
+        }
+        container.style.display = 'block';
+        toggleBtn.setAttribute('aria-expanded', 'true');
+        if (btnText) btnText.textContent = 'Close Reader';
+        container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+        container.style.display = 'none';
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        if (btnText) btnText.textContent = 'Read Manual Here';
+    }
+};
+
+/**
+ * Copies CaseBook version, environment, and storage diagnostics to the clipboard.
+ */
+window.copyCaseBookSystemInfo = async function copyCaseBookSystemInfo() {
+    const btnText = document.getElementById('copySystemInfoBtnText');
+    const theme = document.documentElement.getAttribute('data-theme') || 'light';
+    const isStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+    const swStatus = 'serviceWorker' in navigator ? 'Supported' : 'Unavailable';
+
+    const diagnostics = [
+        'CaseBook — Case Management System',
+        'Version: 2.0.0 (Chambers Manual v7.45)',
+        `Theme: ${theme}`,
+        `Online: ${navigator.onLine ? 'Yes' : 'No'}`,
+        `PWA Standalone: ${isStandalone ? 'Yes' : 'Browser Tab'}`,
+        `Service Worker: ${swStatus}`,
+        `Viewport: ${window.innerWidth}x${window.innerHeight}`,
+    ].join('\n');
+
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(diagnostics);
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = diagnostics;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+        if (btnText) {
+            const original = btnText.textContent;
+            btnText.textContent = 'Copied Info!';
+            setTimeout(() => {
+                btnText.textContent = original;
+            }, 2000);
+        }
+    } catch {
+        if (btnText) {
+            btnText.textContent = 'Copy Failed';
+            setTimeout(() => {
+                btnText.textContent = 'Copy System Info';
+            }, 2000);
+        }
+    }
+};

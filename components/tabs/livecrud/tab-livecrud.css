@@ -1,0 +1,1553 @@
+/* ═══════════════════════════════════════════════════════════════════
+   CASEBOOK — LIVE DATABASE CRUD MANAGER (MODERN TOKEN-BASED DESIGN)
+   Location: components/tabs/livecrud/tab-livecrud.css
+   Strict Scoping: :is(#livecrud, [data-livecrud-scope])
+   Design Language: Advocate Charcoal & Gold (styles/tokens.css & DESIGN.md)
+   Zero Hard-Coded Colors • 100% Lucide Iconography • Mobile-First
+   ═══════════════════════════════════════════════════════════════════ */
+
+:is(#livecrud, [data-livecrud-scope]),
+#livecrud {
+  font-family: var(--font-sans);
+  color: var(--fg-primary);
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 0 var(--space-10);
+  box-sizing: border-box;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .hidden {
+  display: none !important;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* ─── 1. Master Header Banner & View Switcher ──────────────────── */
+:is(#livecrud, [data-livecrud-scope]) .lc-master-head.board-head {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+  box-shadow: var(--shadow-sm);
+  flex-wrap: wrap;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-master-head .head-left {
+  min-width: 0;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-master-head .h1 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-1);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-master-head .crest {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--btn-glow-ring);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-master-head .crest svg {
+  color: inherit !important;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-master-head .h1-text {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: var(--fg-primary);
+  letter-spacing: -0.02em;
+  line-height: var(--leading-tight);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-master-head .sub {
+  font-size: var(--text-xs);
+  color: var(--fg-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  flex-wrap: wrap;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-bold);
+  white-space: nowrap;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .live-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--feedback-success);
+  display: inline-block;
+  flex-shrink: 0;
+  animation: lcLivePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes lcLivePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.9); }
+}
+
+/* Header View Switcher */
+:is(#livecrud, [data-livecrud-scope]) .lc-view-toggle.view-toggle {
+  display: inline-flex;
+  background: var(--bg-surface-raised);
+  padding: 3px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1-5);
+  padding: 6px 12px;
+  min-height: 34px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--fg-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .view-btn svg {
+  color: inherit !important;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .view-btn.active {
+  background: var(--bg-surface);
+  color: var(--fg-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ─── 2. Unified Minimalist Toolbar & Custom Dropdowns ─────────── */
+:is(#livecrud, [data-livecrud-scope]) .lc-minimal-toolbar {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-3-5) var(--space-5);
+  margin-bottom: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-toolbar-primary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-table-select-wrap {
+  min-width: 210px;
+  flex-shrink: 0;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-dropdown-trigger {
+  min-height: var(--touch-target-min);
+  padding: var(--space-2) var(--space-3);
+  gap: var(--space-2);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-trigger-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-trigger-icon svg,
+:is(#livecrud, [data-livecrud-scope]) .lc-trigger-chevron svg {
+  color: inherit !important;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-trigger-label {
+  flex: 1 1 auto;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg-primary);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-trigger-chevron {
+  display: inline-flex;
+  align-items: center;
+  color: var(--fg-secondary);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Sync .hidden toggle with styles/components.css .custom-dropdown-menu */
+:is(#livecrud, [data-livecrud-scope]) .lc-dropdown-menu:not(.hidden) {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: scale(1) !important;
+  pointer-events: auto !important;
+  display: block !important;
+  z-index: 1060;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-dd-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: var(--space-1);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-dd-item {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+}
+
+/* Integrated Search + Filter Bar */
+:is(#livecrud, [data-livecrud-scope]) .lc-integrated-search-box {
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px var(--space-2-5);
+  min-height: var(--touch-target-min);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-raised);
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-integrated-search-box:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-search-icon {
+  color: var(--fg-tertiary);
+  flex-shrink: 0;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--fg-primary);
+  font-size: var(--text-sm);
+  outline: none;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-search-input::placeholder {
+  color: var(--fg-tertiary);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .search-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: var(--bg-subtle);
+  color: var(--fg-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .search-clear-btn:hover {
+  color: var(--fg-primary);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-search-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--border-subtle);
+  flex-shrink: 0;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-filter-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: var(--space-1-5) var(--space-2-5);
+  min-height: 34px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--fg-secondary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-filter-menu-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--fg-primary);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-filter-menu-btn svg {
+  color: inherit !important;
+  stroke: currentColor;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-filter-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: var(--action-fg);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-bold);
+}
+
+/* Floating Filter Popover Card */
+:is(#livecrud, [data-livecrud-scope]) .lc-filter-card {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(360px, 92vw);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  z-index: 1040;
+  overflow: visible;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-filter-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-surface-raised);
+  border-bottom: 1px solid var(--border-subtle);
+  border-top-left-radius: calc(var(--radius-xl) - 1px);
+  border-top-right-radius: calc(var(--radius-xl) - 1px);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-filter-card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  color: var(--fg-primary);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-filter-pill-badge {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-semibold);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-filter-card-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--fg-secondary);
+  cursor: pointer;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-filter-card-close:hover {
+  background: var(--bg-subtle);
+  color: var(--fg-primary);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-filter-card-body {
+  padding: var(--space-3-5) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  overflow: visible;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-filter-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-filter-field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--fg-secondary);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-filter-field-label svg {
+  color: inherit !important;
+  stroke: currentColor;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-field-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-filter-empty-msg {
+  font-size: var(--text-xs);
+  color: var(--fg-secondary);
+  text-align: center;
+  padding: var(--space-3) 0;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-filter-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-2-5) var(--space-4);
+  background: var(--bg-surface-raised);
+  border-top: 1px solid var(--border-subtle);
+  border-bottom-left-radius: calc(var(--radius-xl) - 1px);
+  border-bottom-right-radius: calc(var(--radius-xl) - 1px);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-card-reset-btn,
+:is(#livecrud, [data-livecrud-scope]) .lc-card-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: 6px 12px;
+  min-height: 32px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-card-reset-btn {
+  background: transparent;
+  border: 1px solid var(--border-default);
+  color: var(--fg-secondary);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-card-apply-btn {
+  background: var(--action-bg);
+  border: 1px solid var(--btn-glow-border);
+  color: var(--action-fg);
+}
+
+/* Active Filter Tags Strip */
+:is(#livecrud, [data-livecrud-scope]) .lc-active-tags-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-active-tags-label {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--fg-secondary);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-active-tags-list {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  flex-wrap: wrap;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-active-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-tags-clear-btn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: var(--feedback-danger);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+}
+
+/* Toolbar Action Buttons */
+:is(#livecrud, [data-livecrud-scope]) .lc-actions-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  flex-shrink: 0;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .db-action-btn,
+#livecrud .db-action-btn {
+  white-space: nowrap !important;
+  min-height: var(--touch-target-min);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .db-action-btn svg {
+  color: inherit !important;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+/* ─── 3. Cards Grid View (.lc-rows-container & .lc-stream-card) ── */
+:is(#livecrud, [data-livecrud-scope]) .lc-rows-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2-5);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-row-card.lc-stream-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-row-card.lc-stream-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-card-header-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  flex-shrink: 0;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-card-id-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-stream-idx {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--font-bold);
+  color: var(--fg-tertiary);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-stream-caseno {
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  color: var(--fg-primary);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-card-actions-wrap {
+  display: none;
+  align-items: center;
+  gap: var(--space-1-5);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-card-body-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  flex-wrap: wrap;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-stream-casename {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--fg-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 340px;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-card-meta-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-stream-divider {
+  color: var(--border-default);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-stream-court {
+  font-size: var(--text-xs);
+  color: var(--fg-secondary);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-stream-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-semibold);
+  background: var(--bg-subtle);
+  color: var(--fg-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-stream-pill.pill-amount {
+  background: var(--feedback-success-soft);
+  color: var(--feedback-success);
+  border-color: transparent;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-stream-pill.pill-stage {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-desktop-actions-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  flex-shrink: 0;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-action-icon-btn,
+:is(#livecrud, [data-livecrud-scope]) .ra-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--fg-primary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-action-icon-btn svg,
+:is(#livecrud, [data-livecrud-scope]) .ra-btn svg {
+  color: inherit !important;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-edit-btn:hover,
+:is(#livecrud, [data-livecrud-scope]) .ra-btn.edit:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-delete-btn:hover,
+:is(#livecrud, [data-livecrud-scope]) .ra-btn.delete:hover {
+  background: var(--feedback-danger-soft);
+  border-color: var(--feedback-danger);
+  color: var(--feedback-danger);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-4);
+  background: var(--bg-surface);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-xl);
+  color: var(--fg-secondary);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+/* ─── 4. Data Table View & Pagination (Preserving Test Contracts) ─ */
+:is(#livecrud, [data-livecrud-scope]) .table-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .table-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3-5) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .entries-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--fg-secondary);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-page-size-dropdown {
+  width: auto;
+  min-width: 72px;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-page-size-trigger {
+  min-height: 34px;
+  padding: 4px 10px;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .showing-info {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--fg-secondary);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .table-scroll {
+  width: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#livecrud table.data-table,
+:is(#livecrud, [data-livecrud-scope]) table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  border-radius: 0 !important;
+}
+
+#livecrud thead th,
+:is(#livecrud, [data-livecrud-scope]) thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-surface-raised);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-bold);
+  color: var(--fg-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: inset 0 -1px 0 var(--border-subtle);
+  white-space: nowrap;
+}
+
+#livecrud thead th:first-child,
+:is(#livecrud, [data-livecrud-scope]) thead th:first-child {
+  left: auto !important;
+}
+
+:is(#livecrud, [data-livecrud-scope]) thead th .th-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+:is(#livecrud, [data-livecrud-scope]) thead th .th-sort-btn:hover {
+  color: var(--fg-primary);
+  background: var(--bg-surface-hover);
+}
+
+:is(#livecrud, [data-livecrud-scope]) thead th .th-sort-btn.is-active {
+  color: var(--accent);
+}
+
+:is(#livecrud, [data-livecrud-scope]) thead th .th-sort-btn .sort-icon {
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.65;
+}
+
+:is(#livecrud, [data-livecrud-scope]) thead th .th-sort-btn.is-active .sort-icon {
+  opacity: 1;
+}
+
+:is(#livecrud, [data-livecrud-scope]) thead th .th-sort-btn svg {
+  color: inherit !important;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+#livecrud tbody td,
+:is(#livecrud, [data-livecrud-scope]) tbody td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--text-sm);
+  color: var(--fg-primary);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+#livecrud tbody td:first-child,
+:is(#livecrud, [data-livecrud-scope]) tbody td:first-child {
+  position: static !important;
+  box-shadow: none !important;
+}
+
+#livecrud tbody tr:hover td,
+:is(#livecrud, [data-livecrud-scope]) tbody tr:hover td {
+  background: var(--bg-surface-hover);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+}
+
+/* Pagination */
+:is(#livecrud, [data-livecrud-scope]) .pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3-5) var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .page-info {
+  font-size: var(--text-xs);
+  color: var(--fg-secondary);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .page-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: 34px;
+  height: 34px;
+  padding: 0 var(--space-2-5);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--fg-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .pagination-btn:hover:not(:disabled) {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-strong);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .pagination-btn.active {
+  background: var(--action-bg);
+  border-color: var(--btn-glow-border);
+  color: var(--action-fg);
+}
+
+:is(#livecrud, [data-livecrud-scope]) .pagination-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+:is(#livecrud, [data-livecrud-scope]) .pagination-ellipsis {
+  padding: 0 var(--space-1);
+  color: var(--fg-tertiary);
+}
+
+/* ─── 5. Modals (Edit/Insert & Delete Confirmation) ────────────── */
+.db-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: var(--bg-overlay);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  box-sizing: border-box;
+}
+
+.db-modal-backdrop.hidden {
+  display: none !important;
+}
+
+.db-modal-card {
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--fg-primary);
+  animation: lcModalPopIn 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes lcModalPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.lc-delete-modal-card {
+  max-width: 480px;
+}
+
+.lc-form-modal-header,
+.lc-delete-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--bg-surface-raised);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.lc-modal-title-box,
+.lc-delete-header-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.lc-modal-icon-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  background: var(--brand-soft, var(--accent-soft));
+  color: var(--accent);
+  border: 1px solid var(--btn-glow-border, rgba(227, 179, 65, 0.28));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lc-delete-icon-badge {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-lg);
+  background: var(--feedback-danger-soft);
+  color: var(--feedback-danger);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lc-modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.lc-modal-title,
+.lc-delete-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  color: var(--fg-primary);
+}
+
+.lc-modal-badge {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-bold);
+}
+
+.lc-badge-edit {
+  background: var(--brand-soft, var(--accent-soft));
+  color: var(--accent);
+  border: 1px solid var(--btn-glow-border, rgba(227, 179, 65, 0.25));
+}
+
+.lc-badge-insert {
+  background: var(--feedback-success-soft);
+  color: var(--feedback-success);
+  border: 1px solid rgba(21, 128, 61, 0.22);
+}
+
+.lc-badge-table {
+  background: var(--bg-subtle);
+  color: var(--fg-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.lc-delete-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--feedback-danger-soft);
+  color: var(--feedback-danger);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-bold);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.lc-modal-subtitle {
+  margin: 2px 0 0;
+  font-size: var(--text-xs);
+  color: var(--fg-secondary);
+}
+
+.db-modal-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--fg-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.db-modal-close-btn:hover {
+  color: var(--fg-primary);
+  border-color: var(--border-strong);
+}
+
+.lc-modal-field-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+
+.lc-field-search-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 7px var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-raised);
+  color: var(--fg-tertiary);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+}
+
+.lc-field-search-wrap:focus-within {
+  border-color: var(--accent);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 3px var(--brand-soft, rgba(227, 179, 65, 0.14));
+}
+
+.lc-field-filter-input,
+.lc-field-filter-input:focus,
+.lc-field-filter-input:focus-visible {
+  flex: 1;
+  min-width: 0;
+  border: none !important;
+  background: transparent !important;
+  color: var(--fg-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.lc-field-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  color: var(--fg-tertiary);
+  cursor: pointer;
+}
+
+.lc-field-search-clear:hover {
+  background: var(--bg-subtle);
+  color: var(--fg-primary);
+}
+
+.lc-field-search-clear.hidden {
+  display: none !important;
+}
+
+.lc-modal-stat-pill {
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  background: var(--bg-subtle);
+  color: var(--fg-secondary);
+  font-size: var(--text-2xs);
+  font-weight: var(--font-semibold);
+}
+
+.lc-modal-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.lc-dynamic-fields-grid {
+  padding: var(--space-4) var(--space-5);
+  overflow-y: auto;
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3-5) var(--space-4);
+  align-content: start;
+}
+
+.lc-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  margin: 0;
+}
+
+.lc-field-span-2 {
+  grid-column: 1 / -1;
+}
+
+.lc-field-label {
+  font-size: 11.5px;
+  font-weight: var(--font-semibold);
+  color: var(--fg-secondary);
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+}
+
+.lc-field-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  min-height: 36px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-raised);
+  color: var(--fg-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.4;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+}
+
+.lc-field-input::placeholder {
+  color: var(--fg-tertiary);
+  opacity: 0.75;
+}
+
+.lc-field-input:hover {
+  border-color: var(--border-strong);
+}
+
+.lc-field-input:focus {
+  border-color: var(--accent);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 3px var(--brand-soft, rgba(227, 179, 65, 0.14));
+}
+
+.lc-field-textarea {
+  min-height: 72px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.lc-modal-status-banner {
+  margin: 0 var(--space-5) var(--space-3);
+  padding: var(--space-2-5) var(--space-3-5);
+  border-radius: var(--radius-md);
+  background: var(--feedback-danger-soft);
+  color: var(--feedback-danger);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.lc-modal-status-banner.hidden {
+  display: none !important;
+}
+
+.lc-modal-footer,
+.lc-delete-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3-5) var(--space-5);
+  background: var(--bg-surface-raised);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.lc-delete-modal-footer {
+  justify-content: flex-end;
+}
+
+.lc-modal-footer-left,
+.lc-modal-footer-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.lc-modal-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--fg-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.lc-modal-tool-btn:hover {
+  color: var(--fg-primary);
+  border-color: var(--border-strong);
+  background: var(--bg-surface-hover, var(--bg-subtle));
+}
+
+.lc-modal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.lc-cancel-btn {
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--fg-primary);
+}
+
+.lc-cancel-btn:hover {
+  background: var(--bg-surface-hover, var(--bg-subtle));
+  border-color: var(--border-strong);
+}
+
+.lc-submit-btn {
+  border: 1px solid var(--action-bg, #b45309);
+  background: var(--action-bg, #b45309);
+  color: #ffffff;
+  box-shadow: var(--shadow-xs);
+}
+
+.lc-submit-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow: var(--btn-glow-shadow, 0 0 14px rgba(227, 179, 65, 0.3));
+}
+
+[data-theme="dark"] .lc-submit-btn,
+html.dark .lc-submit-btn,
+body.dark .lc-submit-btn {
+  background-color: #E3B341 !important;
+  color: #1C1917 !important;
+  border-color: #EDC752 !important;
+  box-shadow: var(--btn-glow-shadow, 0 0 12px rgba(227, 179, 65, 0.25));
+}
+
+.lc-delete-modal-body {
+  padding: var(--space-4) var(--space-5);
+}
+
+.lc-delete-description {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--fg-secondary);
+  line-height: var(--leading-normal);
+}
+
+.lc-delete-preview-box {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+}
+
+.lc-delete-preview-label {
+  font-size: var(--text-2xs);
+  font-weight: var(--font-bold);
+  text-transform: uppercase;
+  color: var(--fg-tertiary);
+  margin-bottom: 2px;
+}
+
+.lc-delete-preview-content {
+  font-size: var(--text-sm);
+  font-weight: var(--font-bold);
+  color: var(--fg-primary);
+}
+
+.lc-delete-error-banner {
+  margin-top: var(--space-3);
+  padding: var(--space-2-5) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--feedback-danger-soft);
+  color: var(--feedback-danger);
+  font-size: var(--text-xs);
+}
+
+@keyframes lcRotateSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+:is(#livecrud, [data-livecrud-scope]) .lc-spin {
+  display: inline-block;
+  animation: lcRotateSpin 1s linear infinite;
+  transform-origin: center center;
+  flex-shrink: 0;
+}
+
+/* ─── 6. Responsive Mobile Rules ───────────────────────────────── */
+@media (max-width: 768px) {
+  :is(#livecrud, [data-livecrud-scope]),
+  #livecrud {
+    padding: 0 0 calc(88px + env(safe-area-inset-bottom, 16px)) 0 !important;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) .board-head.lc-master-head {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--space-3-5) var(--space-3);
+    border-radius: var(--radius-lg);
+    gap: var(--space-3);
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) .lc-minimal-toolbar {
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) .lc-toolbar-primary {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2-5);
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) .lc-table-select-wrap,
+  :is(#livecrud, [data-livecrud-scope]) .lc-custom-dropdown,
+  :is(#livecrud, [data-livecrud-scope]) .lc-dropdown-trigger,
+  :is(#livecrud, [data-livecrud-scope]) .lc-search-wrap {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) .lc-actions-wrap {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2-5);
+    width: 100%;
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) .lc-actions-wrap .db-action-btn {
+    flex: 1 1 0%;
+    justify-content: center;
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) .lc-row-card.lc-stream-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) .lc-card-header-strip {
+    justify-content: space-between;
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) .lc-card-actions-wrap {
+    display: inline-flex;
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) .lc-desktop-actions-wrap {
+    display: none;
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) .lc-stream-casename {
+    max-width: 100%;
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) .table-scroll {
+    max-height: 60vh;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) table.data-table {
+    width: max-content;
+    min-width: 100%;
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) .table-top,
+  :is(#livecrud, [data-livecrud-scope]) .pagination {
+    padding: var(--space-3);
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) .pagination-btn {
+    min-height: 38px;
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) .lc-dropdown-trigger,
+  :is(#livecrud, [data-livecrud-scope]) .view-btn,
+  :is(#livecrud, [data-livecrud-scope]) .db-action-btn,
+  :is(#livecrud, [data-livecrud-scope]) .lc-action-icon-btn,
+  :is(#livecrud, [data-livecrud-scope]) .ra-btn {
+    min-height: var(--touch-target-min) !important;
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) .lc-action-icon-btn,
+  :is(#livecrud, [data-livecrud-scope]) .ra-btn {
+    width: var(--touch-target-min);
+  }
+
+  :is(#livecrud, [data-livecrud-scope]) input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  :is(#livecrud, [data-livecrud-scope]) select,
+  :is(#livecrud, [data-livecrud-scope]) textarea {
+    font-size: 16px !important;
+    min-height: var(--touch-target-min) !important;
+  }
+
+  .db-modal-backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .db-modal-card {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+
+  .lc-dynamic-fields-grid {
+    grid-template-columns: 1fr;
+    padding: var(--space-3-5) var(--space-4);
+  }
+}

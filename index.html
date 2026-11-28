@@ -1,0 +1,1554 @@
+﻿<!doctype html>
+<html lang="en" class="app-loading">
+  <!-- ==========================================================================
+     DOCUMENT HEAD & ASSET CONFIGURATION
+     Raw Format:
+     <head>
+<script>
+window.addEventListener('error', function(e) {
+  const errDiv = document.createElement('div');
+  errDiv.style.position = 'fixed';
+  errDiv.style.top = '0'; errDiv.style.left = '0'; errDiv.style.zIndex = '999999';
+  errDiv.style.background = 'red'; errDiv.style.color = 'white';
+  errDiv.style.padding = '10px';
+  errDiv.innerText = 'JS_ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+  document.body.appendChild(errDiv);
+});
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      for(let registration of registrations) {
+        registration.unregister();
+        console.log('ServiceWorker unregistered');
+      }
+    });
+  }
+  caches.keys().then(function(names) {
+    for (let name of names)
+      caches.delete(name);
+  });
+</script>
+     ├── Meta Tags: UTF-8, Viewport, Theme Color, Apple/Mobile PWA
+     ├── Web Fonts: Google Fonts (Plus Jakarta Sans, Inter)
+     ├── Tailwind CSS CDN (Preflight disabled)
+     ├── Inline Auth Validation Script (cmUser session check)
+     ├── Font Awesome 6 Icons (CDN)
+     ├── Main Application Stylesheets: styles/ & components/tabs/
+     └── Web App Manifest & App Icons (manifest.webmanifest, icons/)
+     ========================================================================== -->
+  <head>
+    <!-- 1. Early Click Guard & Safe Action Queue for Slow Connections -->
+    <script>
+      (function() {
+        window.__caseMgmtInitialized = false;
+        window.__queuedTabAction = null;
+        window.__queuedGuestLogin = false;
+
+        // Safe stub functions to intercept premature clicks before admin.js loads
+        window.showTab = function(tabId, event) {
+          if (event && event.preventDefault) event.preventDefault();
+          if (!window.__caseMgmtInitialized) {
+            console.warn('[CaseBook Network Guard] Assets downloading. Queued tab transition to:', tabId);
+            window.__queuedTabAction = tabId;
+            return;
+          }
+        };
+
+        window.handleGuestLogin = function(event) {
+          if (event && event.preventDefault) event.preventDefault();
+          if (!window.__caseMgmtInitialized) {
+            console.warn('[CaseBook Network Guard] Assets downloading. Queued guest login.');
+            window.__queuedGuestLogin = true;
+            return;
+          }
+        };
+
+        window.handleLogout = function(event) {
+          if (event && event.preventDefault) event.preventDefault();
+        };
+
+        window.handleAdminLogin = function(event) {
+          if (event && event.preventDefault) event.preventDefault();
+        };
+
+        window.toggleMobileSidebar = function() {};
+        window.closeMobileSidebar = function() {};
+        window.toggleTopnavSearch = function() {};
+      })();
+    </script>
+
+    <!-- 2. Sanitize Global Error Handler (Debug mode only to prevent red crash banners on slow network) -->
+    <script>
+      (function() {
+        var isDebugMode = window.location.search.includes('debug=1') || localStorage.getItem('casebook-debug') === 'true';
+        if (isDebugMode) {
+          window.addEventListener('error', function(e) {
+            var errDiv = document.createElement('div');
+            errDiv.style.position = 'fixed';
+            errDiv.style.top = '0';
+            errDiv.style.left = '0';
+            errDiv.style.zIndex = '999999';
+            errDiv.style.background = '#dc2626';
+            errDiv.style.color = '#ffffff';
+            errDiv.style.padding = '8px 12px';
+            errDiv.style.fontFamily = 'monospace';
+            errDiv.style.fontSize = '12px';
+            errDiv.innerText = 'JS_ERROR: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+            document.body.appendChild(errDiv);
+          });
+        }
+      })();
+    </script>
+
+    <!-- 3. Cache Purge Trigger (Only executed when explicitly requested via URL parameter) -->
+    <script>
+      if (window.location.search.includes('clear-cache=1')) {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for (let registration of registrations) {
+              registration.unregister();
+              console.log('ServiceWorker unregistered via clear-cache');
+            }
+          });
+        }
+        caches.keys().then(function(names) {
+          for (let name of names) caches.delete(name);
+        });
+      }
+    </script>
+
+    <!-- 4. Early Skeleton Styles for Zero-Delay Premium PWA Splash & Interaction Lock -->
+    <style id="earlySkeletonStyles">
+      html.app-loading, body.app-loading {
+        overflow: hidden !important;
+        height: 100% !important;
+      }
+      #appSkeletonOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 999999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        padding: calc(24px + env(safe-area-inset-top, 0px)) 24px calc(28px + env(safe-area-inset-bottom, 0px));
+        background-color: #F5F6FA;
+        background-image: radial-gradient(circle at 50% 42%, rgba(217, 119, 6, 0.08) 0%, transparent 58%);
+        color: #0F172A;
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        overflow: hidden;
+        box-sizing: border-box;
+        transition: opacity 320ms cubic-bezier(0.16, 1, 0.3, 1), transform 320ms cubic-bezier(0.16, 1, 0.3, 1), visibility 320ms ease;
+      }
+      [data-theme="dark"] #appSkeletonOverlay,
+      html.dark #appSkeletonOverlay {
+        background-color: #12131A;
+        background-image: radial-gradient(circle at 50% 42%, rgba(227, 179, 65, 0.12) 0%, rgba(227, 179, 65, 0.03) 38%, transparent 65%);
+        color: #F5F4F0;
+      }
+      #appSkeletonOverlay.fade-out,
+      body:not(.app-loading) #appSkeletonOverlay {
+        opacity: 0;
+        transform: scale(1.015);
+        pointer-events: none;
+        visibility: hidden;
+      }
+      .pwa-splash-spacer {
+        height: 24px;
+        flex-shrink: 0;
+      }
+      .pwa-splash-center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 100%;
+        max-width: 340px;
+        margin: auto 0;
+        animation: cbSplashReveal 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+      .pwa-splash-crest-wrap {
+        position: relative;
+        width: 84px;
+        height: 84px;
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 100%);
+        border: 1px solid rgba(217, 119, 6, 0.25);
+        box-shadow: 0 16px 36px -10px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+        margin-bottom: 22px;
+        color: #B45309;
+      }
+      [data-theme="dark"] .pwa-splash-crest-wrap,
+      html.dark .pwa-splash-crest-wrap {
+        background: linear-gradient(145deg, #1B1D28 0%, #14161F 100%);
+        border: 1px solid rgba(227, 179, 65, 0.32);
+        box-shadow: 0 20px 44px -12px rgba(0, 0, 0, 0.65), 0 0 28px rgba(227, 179, 65, 0.12);
+        color: #E3B341;
+      }
+      .pwa-splash-crest-ring {
+        position: absolute;
+        inset: -7px;
+        border-radius: 30px;
+        border: 1px solid rgba(217, 119, 6, 0.18);
+        animation: cbPulseGold 2.4s ease-in-out infinite;
+        pointer-events: none;
+      }
+      [data-theme="dark"] .pwa-splash-crest-ring,
+      html.dark .pwa-splash-crest-ring {
+        border-color: rgba(227, 179, 65, 0.22);
+      }
+      .pwa-splash-title {
+        font-family: 'Playfair Display', 'Plus Jakarta Sans', Georgia, serif;
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.15;
+        margin: 0 0 8px 0;
+        color: inherit;
+      }
+      .pwa-splash-edition {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        background: rgba(217, 119, 6, 0.1);
+        color: #B45309;
+        border: 1px solid rgba(217, 119, 6, 0.22);
+        margin-bottom: 26px;
+      }
+      [data-theme="dark"] .pwa-splash-edition,
+      html.dark .pwa-splash-edition {
+        background: rgba(227, 179, 65, 0.12);
+        color: #E3B341;
+        border-color: rgba(227, 179, 65, 0.28);
+      }
+      .pwa-splash-progress-rail {
+        width: 210px;
+        height: 3.5px;
+        border-radius: 9999px;
+        background: rgba(148, 163, 184, 0.25);
+        overflow: hidden;
+        position: relative;
+        margin-bottom: 14px;
+      }
+      [data-theme="dark"] .pwa-splash-progress-rail,
+      html.dark .pwa-splash-progress-rail {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .pwa-splash-progress-bar {
+        position: absolute;
+        inset: 0;
+        width: 48%;
+        border-radius: 9999px;
+        background: linear-gradient(90deg, transparent 0%, #D97706 50%, transparent 100%);
+        animation: cbProgressFlow 1.65s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      }
+      [data-theme="dark"] .pwa-splash-progress-bar,
+      html.dark .pwa-splash-progress-bar {
+        background: linear-gradient(90deg, transparent 0%, #E3B341 50%, #FDE68A 75%, transparent 100%);
+        box-shadow: 0 0 12px rgba(227, 179, 65, 0.5);
+      }
+      .pwa-splash-subtitle {
+        font-size: 13px;
+        font-weight: 500;
+        color: #64748B;
+        margin: 0;
+        letter-spacing: 0.01em;
+      }
+      [data-theme="dark"] .pwa-splash-subtitle,
+      html.dark .pwa-splash-subtitle {
+        color: #94A3B8;
+      }
+      .pwa-splash-footer {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 14px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748B;
+        letter-spacing: 0.02em;
+        flex-shrink: 0;
+      }
+      [data-theme="dark"] .pwa-splash-footer,
+      html.dark .pwa-splash-footer {
+        background: rgba(23, 25, 35, 0.78);
+        border-color: rgba(255, 255, 255, 0.08);
+        color: #94A3B8;
+      }
+      .pwa-splash-footer svg {
+        color: #B45309;
+        flex-shrink: 0;
+      }
+      [data-theme="dark"] .pwa-splash-footer svg,
+      html.dark .pwa-splash-footer svg {
+        color: #E3B341;
+      }
+      @keyframes cbSplashReveal {
+        from { opacity: 0; transform: translateY(8px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      @keyframes cbShimmerWave {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+      @keyframes cbProgressFlow {
+        0% { transform: translateX(-110%); }
+        100% { transform: translateX(220%); }
+      }
+      @keyframes cbPulseGold {
+        0%, 100% { opacity: 0.85; transform: scale(1); }
+        50% { opacity: 0.35; transform: scale(1.06); }
+      }
+      @keyframes cbSpin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+    </style>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover"
+    />
+    <title>CaseBook — Advocate Case Management System</title>
+    <!-- Security Headers & Content Security Policy -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://code.iconify.design; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.iconify.design https://api.simplesvg.com https://api.unisvg.com; object-src 'none'; form-action 'self'; base-uri 'self';"
+    />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Early Theme Initialization to prevent flash of wrong theme (Advocate Dark/Light Theme) -->
+    <script>
+      (function () {
+        try {
+          var savedTheme = localStorage.getItem("casebook-theme");
+          if (savedTheme === "light") {
+            document.documentElement.classList.remove("dark");
+            document.documentElement.setAttribute("data-theme", "light");
+          } else {
+            document.documentElement.classList.add("dark");
+            document.documentElement.setAttribute("data-theme", "dark");
+            if (!savedTheme) {
+              localStorage.setItem("casebook-theme", "dark");
+            }
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <!-- Tailwind CSS (with preflight disabled to preserve existing inputs & buttons) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        corePlugins: {
+          preflight: false,
+        },
+        theme: {
+          extend: {
+            colors: {
+              "adv-bg": "#F5F5F7",
+              "adv-surface": "#FFFFFF",
+              "adv-border": "#E5E7EB",
+              "adv-ink": "#111827",
+              "adv-body": "#374151",
+              "adv-muted": "#6B7280",
+              "adv-light": "#9CA3AF",
+              "adv-nav-icon": "#9CA3AF",
+            },
+            backgroundImage: {
+              "grad-nav": "linear-gradient(180deg, #1F2937 0%, #0F172A 100%)",
+              "grad-primary": "linear-gradient(135deg, #1F2937 0%, #111827 100%)",
+            },
+            fontFamily: {
+              sans: ["'Plus Jakarta Sans'", "system-ui", "sans-serif"],
+              serif: ["'Plus Jakarta Sans'", "system-ui", "sans-serif"],
+              mono: ["'JetBrains Mono'", "Consolas", "monospace"],
+            },
+          },
+        },
+      };
+    </script>
+    <script>
+      try {
+        var _cmUser = sessionStorage.getItem("cmUser") || localStorage.getItem("cmUser");
+        var _cmToken =
+          sessionStorage.getItem("cmSessionToken") || localStorage.getItem("cmSessionToken");
+        if (_cmUser === "admin" && _cmToken) {
+          document.documentElement.classList.add("auth-admin");
+        } else if (_cmUser === "guest") {
+          document.documentElement.classList.add("auth-guest");
+        }
+      } catch (e) {}
+    </script>
+    <!-- CaseBook Design Tokens: Advocate Charcoal & Gold -->
+    <link rel="stylesheet" href="styles/tokens.css?v=2.0" />
+    <!-- CaseBook Modern CSS Reset & WebKit Eradication -->
+    <link rel="stylesheet" href="styles/reset.css?v=2.0" />
+    <!-- CaseBook Top Navigation & Spotlight Search -->
+    <link rel="stylesheet" href="styles/headerNav.css?v=7.0" />
+    <!-- CaseBook Master Layout Shell & Navigation -->
+    <link rel="stylesheet" href="styles/layout.css?v=1.1" />
+    <!-- CaseBook Authentication & Login Screen -->
+    <link rel="stylesheet" href="styles/auth.css?v=1.0" />
+    <!-- CaseBook Core UI Primitives & Components -->
+    <link rel="stylesheet" href="styles/components.css?v=1.0" />
+    <!-- CaseBook Reusable Custom Calendar Component -->
+    <link rel="stylesheet" href="components/custom-calendar.css?v=1.0" />
+    <!-- CaseBook Shared Modals & Dialogs -->
+    <link rel="stylesheet" href="styles/modals.css?v=1.0" />
+    <!-- CaseBook Print Stylesheet (A4 Cause List & Dossier) -->
+    <link rel="stylesheet" href="styles/print.css?v=1.0" />
+    <!-- CaseBook Home Dashboard (Executive Command Console) -->
+    <link rel="stylesheet" href="components/tabs/home/tab-home.css?v=2.1" />
+    <!-- CaseBook NewHome Zen Dashboard -->
+    <link rel="stylesheet" href="components/tabs/newhome/tab-newhome.css?v=2.1" />
+    <!-- CaseBook Forward Hearing Tab -->
+    <link rel="stylesheet" href="components/tabs/hearing/tab-hearing.css?v=2.1" />
+    <!-- CaseBook Dedicated Undated Cases Tab -->
+    <link rel="stylesheet" href="components/tabs/undated/tab-undated.css?v=2.5" />
+    <!-- CaseBook Upcoming Hearings Tab -->
+    <link rel="stylesheet" href="components/tabs/upcoming/tab-upcoming.css?v=2.5" />
+    <!-- CaseBook Master Calendar Tab -->
+    <link rel="stylesheet" href="components/tabs/calendar/tab-calendar.css?v=2.1" />
+    <!-- CaseBook Cause List Tab -->
+    <link rel="stylesheet" href="components/tabs/causelist/tab-causelist.css?v=2.1" />
+    <!-- CaseBook All Cases Tab -->
+    <link rel="stylesheet" href="components/tabs/all/tab-all.css?v=2.2" />
+    <!-- CaseBook Add Case Tab -->
+    <link rel="stylesheet" href="components/tabs/add/tab-add.css?v=3.1" />
+    <!-- CaseBook Update Case Tab -->
+    <link rel="stylesheet" href="components/tabs/update/tab-update.css?v=2.1" />
+    <!-- CaseBook Delete Case Tab -->
+    <link rel="stylesheet" href="components/tabs/delete/tab-delete.css?v=2.1" />
+    <!-- CaseBook Transfer Case Tab -->
+    <link rel="stylesheet" href="components/tabs/transfer/tab-transfer.css?v=2.1" />
+    <!-- CaseBook Disposed Cases Tab -->
+    <link rel="stylesheet" href="components/tabs/disposed/tab-disposed.css?v=2.3" />
+    <!-- CaseBook Archived Cases Tab -->
+    <link rel="stylesheet" href="components/tabs/archived/tab-archived.css?v=1.0" />
+    <!-- CaseBook Live CRUD Tab -->
+    <link rel="stylesheet" href="components/tabs/livecrud/tab-livecrud.css?v=2.1" />
+    <!-- CaseBook Manage Hub Tab -->
+    <link rel="stylesheet" href="components/tabs/manage/tab-manage.css?v=3.0" />
+    <!-- CaseBook Paisa Ledger Tab -->
+    <link rel="stylesheet" href="components/tabs/paisa/tab-paisa.css?v=2.1" />
+    <!-- CaseBook Todo Tab -->
+    <link rel="stylesheet" href="components/tabs/todo/tab-todo.css?v=2.1" />
+    <!-- CaseBook Dedicated Case Detail Tab -->
+    <link rel="stylesheet" href="components/tabs/detail/tab-detail.css?v=1.0" />
+    <!-- CaseBook Courts Directory Tab -->
+    <link rel="stylesheet" href="components/tabs/courts/tab-courts.css?v=2.1" />
+    <!-- CaseBook Helpers Directory Tab -->
+    <link rel="stylesheet" href="components/tabs/helpers/tab-helpers.css?v=2.1" />
+    <!-- CaseBook Settings & Security Tab -->
+    <link rel="stylesheet" href="components/tabs/settings/tab-settings.css?v=2.1" />
+    <!-- CaseBook About System Tab -->
+    <link rel="stylesheet" href="components/tabs/about/tab-about.css?v=2.1" />
+
+    <!-- Font Awesome 6 Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css?v=10.1"
+    />
+    <!-- Iconify SVG Framework Web Component -->
+    <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+    <!-- Lucide Icons Library -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
+    <!-- PWA & Mobile Web App Meta Tags -->
+    <meta name="theme-color" content="#12141f" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="CaseBook" />
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+  </head>
+
+  <body class="app-loading">
+    <!-- ==========================================================================
+         CASEBOOK PREMIUM PWA BOOT SPLASH (ZERO DEAD CLICKS / RACE-CONDITION GUARD)
+         ========================================================================== -->
+    <div id="appSkeletonOverlay" aria-hidden="true" role="status" aria-label="Loading CaseBook workspace">
+      <div class="pwa-splash-spacer" aria-hidden="true"></div>
+
+      <main class="pwa-splash-center">
+        <div class="pwa-splash-crest-wrap" aria-hidden="true">
+          <span class="pwa-splash-crest-ring"></span>
+          <svg class="lucide lucide-scale" xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+        </div>
+
+        <h1 class="pwa-splash-title">CaseBook</h1>
+        <div class="pwa-splash-edition">
+          <span>Advocate Chamber Edition</span>
+        </div>
+
+        <div class="pwa-splash-progress-rail" aria-hidden="true">
+          <div class="pwa-splash-progress-bar"></div>
+        </div>
+
+        <p class="pwa-splash-subtitle">Synchronizing your legal diary &amp; cause list...</p>
+      </main>
+
+      <footer class="pwa-splash-footer">
+        <svg class="lucide lucide-shield-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+        <span>End-to-End Encrypted Registry • v2.0</span>
+      </footer>
+    </div>
+    <!-- ==========================================================================
+         CMS RAW ELEMENT ARCHITECTURE & DOM SCHEMATIC
+         ==========================================================================
+         <body>
+         │
+         ├── [1] #loginScreen (.auth-shell)
+         │   └── .login-card
+         │       ├── .auth-header (.brand-pill, h1, p, .creator-badge-card)
+         │       ├── form#loginForm (#username, #password, #rememberMe, button:submit)
+         │       ├── button#guestModeBtn (Continue as Guest)
+         │       ├── button#loginInstallBtn (PWA Install / Shortcut)
+         │       └── p#loginError
+         │
+         ├── [2] #guestScreen (.guest-screen.hidden)
+         │   ├── header.guest-header-bar (.materialize-nav)
+         │   │   └── .nav-wrapper (Brand Logo, #guestDesktopInstallBtn, #guestLogoutBtn)
+         │   └── .guest-content
+         │       ├── .search-panel (h2, input#guestSearch)
+         │       ├── .search-results-panel (table#guestCasesTable)
+         │       └── #guestCaseDetailsSection (Case Details Grid, Print Dossier)
+         │
+         ├── [3] #adminScreen (.page-shell.hidden)
+         │   ├── #sidebarOverlay
+         │   ├── nav.sidebar (.sidenav)
+         │   │   ├── .user-view (.sidebar-author-card: Avatar, Name, Title, Jurisdiction)
+         │   │   ├── Overview & Schedule links (Home, My Cases, Cause List, Upcoming, Calendar, Todo)
+         │   │   ├── Case Workflow links (Add, Update, Hearing, Transfer, Delete, Courts, Helpers)
+         │   │   ├── Case Registers links (All, Undated, Disposed)
+         │   │   ├── Database link (Supabase DB Manager)
+         │   │   └── Settings link (Change Password)
+         │   │
+         │   ├── main.content (Active Workspace Tab Container)
+         │   │   ├── [Tab: #home] Home Dashboard (Hero Card, 6 KPI Metric Cards, Today's Board, Priority Tasks, Registers)
+         │   │   ├── [Tab: #search] My Cases Registry (Counters Bar, Filter Drawer, Results Table, Complete Case Dossier)
+         │   │   ├── [Tab: #causelist] Daily Cause List (Date Selector, Court Filter, Badges, Table, Printable View)
+         │   │   ├── [Tab: #upcoming] 7-Day Upcoming Hearings (Horizon Header, Dynamic Docket Cards Grid)
+         │   │   ├── [Tab: #todo] To-Do & Deadlines (Stats Bar, Add Task Form with Case Autocomplete, Tasks List)
+         │   │   ├── [Tab: #calendar] Calendar Scheduler (Monthly Overview, Grid View, Selected Day Agenda)
+         │   │   ├── [Tab: #add] Add New Case (Filing Year, Classification Forms: Civil, State, Family, Revenue, Misc, Complaint)
+         │   │   ├── [Tab: #update] Update Case (Case Lookup, Edit Metadata, Status Switcher, Disposal Entry, Type Forms)
+         │   │   ├── [Tab: #hearing] Forward / Update Hearing (Case Lookup, Before/After Comparison, Date Shortcuts, Stage Pills)
+         │   │   ├── [Tab: #transfer] Transfer Case (Single Case Transfer Mode vs Bulk Cases Transfer Mode, History)
+         │   │   ├── [Tab: #delete] Delete Case (Search, Case Preview Card, Confirmation Safeguard)
+         │   │   ├── [Tab: #courts] Manage Courts (Directory Toolbar, Add Court Form, Courts Table)
+         │   │   ├── [Tab: #helpers] Court Helpers Directory (Add Helper Card, Search Bar, Staff Directory Table)
+         │   │   ├── [Tab: #all] All Cases Master Register (Type Pills, Unified Filters, Master Table, Pagination)
+         │   │   ├── [Tab: #undated] Undated Cases (Unlisted Matters Table, Direct Date Assignment)
+         │   │   ├── [Tab: #disposed] Disposed Cases (Concluded Files Table, Disposal Order Archive)
+         │   │   ├── [Tab: #civil..#complaint] Legacy mounts for backwards compatibility
+         │   │   ├── [Tab: #livecrud] Live CRUD — Simple Database Manager (Browse, Insert, Edit, Delete)
+         │   │   ├── [Tab: #settings] Admin Security Settings (Change Password Form)
+         │   │   └── footer.modern-chambers-footer (Pillars, Navigation Portals, Watermarks, Copyright)
+         │
+         ├── [4] Print & Export Documents (Hidden on screen, Visible on @media print)
+         │   ├── #printableCauseList (Daily Court Appearance Board A4 Sheet)
+         │   └── #printableCaseDossier (Full Case Particulars & History Infographic Dossier)
+         │
+         ├── [5] Dialogs & Interactive Modals
+         │   ├── #editCourtModal (Rename Court Forum Dialog)
+         │   ├── #deleteCourtModal (Court Removal Confirmation Dialog)
+         │   ├── #editHelperModal (Update Staff Member Dialog)
+         │   ├── #deleteHelperModal (Staff Removal Confirmation Dialog)
+         │   ├── #caseHistoryModal (Full Hearing & Appearance Timeline Dialog)
+         │   └── #pwaGuideModal (Desktop & Mobile PWA Installation Guide)
+         │
+         ├── [6] Floating Controls & Backdrops
+         │   ├── #mobileFilterBackdrop (Mobile drawer overlay)
+         │   └── button.mobile-fab-btn (+ Add Case Floating Action Button)
+         │
+         └── [7] Scripts (Supabase JS CDN, components/chambers-footer.js, admin.js)
+         ========================================================================== -->
+    <!-- ==========================================================================
+         SECTION 1: AUTHENTICATION & LOGIN SCREEN
+         CaseBook Luxury Legal Chamber Edition (Deep Slate & Gold / Bronze)
+         ========================================================================== -->
+    <div id="loginScreen" class="auth-shell">
+      <div class="vault-ambient" aria-hidden="true"></div>
+      <div class="vault-grid" aria-hidden="true"></div>
+
+      <div class="vault-container">
+        <div class="vault-card">
+
+          <!-- Chamber Emblem & Header -->
+          <header class="chamber-emblem-wrap">
+            <div class="chamber-seal-icon" aria-hidden="true">
+              <svg class="lucide lucide-scale" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
+                <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
+                <path d="M7 21h10"/>
+                <path d="M12 3v18"/>
+                <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>
+              </svg>
+            </div>
+            <div class="chamber-eyebrow">CaseBook Judicial Suite</div>
+            <h1 class="vault-title">Chamber Authentication</h1>
+            <p class="vault-desc">Restricted digital practice vault for designated advocates & registry staff.</p>
+          </header>
+
+          <!-- 1-Tap Persona Role Switcher -->
+          <div class="persona-strip" role="tablist" aria-label="Select Role Profile">
+            <button type="button" class="persona-tab active" id="idxPersonaAdmin" onclick="(function(btn){ document.querySelectorAll('.persona-tab').forEach(function(el){ el.classList.remove('active'); }); btn.classList.add('active'); var e = document.getElementById('email'); var p = document.getElementById('password'); if(e) e.value = 'admin'; if(p) p.value = 'admin123'; })(this)">
+              <svg class="lucide lucide-shield-check" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+              <span>Senior Counsel</span>
+            </button>
+            <button type="button" class="persona-tab" id="idxPersonaMunshi" onclick="(function(btn){ document.querySelectorAll('.persona-tab').forEach(function(el){ el.classList.remove('active'); }); btn.classList.add('active'); var e = document.getElementById('email'); var p = document.getElementById('password'); if(e) e.value = 'munshi'; if(p) p.value = 'chamber2026'; })(this)">
+              <svg class="lucide lucide-briefcase" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              <span>Munshi / Clerk</span>
+            </button>
+            <button type="button" class="persona-tab" id="idxPersonaGuest" onclick="(function(btn){ document.querySelectorAll('.persona-tab').forEach(function(el){ el.classList.remove('active'); }); btn.classList.add('active'); var e = document.getElementById('email'); var p = document.getElementById('password'); if(e) e.value = 'guest'; if(p) p.value = 'guestpass'; })(this)">
+              <svg class="lucide lucide-glasses" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="15" r="4"/><circle cx="18" cy="15" r="4"/><path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M2.5 13 5 7c.7-1.3 1.4-2 3-2"/><path d="M21.5 13 19 7c-.7-1.3-1.5-2-3-2"/></svg>
+              <span>Guest Reader</span>
+            </button>
+          </div>
+
+          <!-- Auth Form -->
+          <form
+            id="loginForm"
+            class="vault-form"
+            action="javascript:void(0);"
+            onsubmit="return handleAdminLogin(event);"
+            novalidate
+          >
+            <!-- Username Input -->
+            <div class="vault-field">
+              <label for="email" class="vault-label">Advocate ID / Handle</label>
+              <div class="vault-input-box">
+                <span class="vault-input-icon" aria-hidden="true">
+                  <svg class="lucide lucide-user-check" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>
+                </span>
+                <input
+                  id="email"
+                  name="email"
+                  type="text"
+                  class="vault-input"
+                  placeholder="e.g. adv.mishra or admin"
+                  autocomplete="username"
+                  value="admin"
+                />
+              </div>
+            </div>
+
+            <!-- Password Input -->
+            <div class="vault-field">
+              <div class="vault-label-row">
+                <label for="password" class="vault-label">Chamber Passcode</label>
+                <a href="#" onclick="alert('Password reset instructions dispatched to your chamber mail.'); return false;" class="vault-helper-link">Reset Passcode?</a>
+              </div>
+              <div class="vault-input-box">
+                <span class="vault-input-icon" aria-hidden="true">
+                  <svg class="lucide lucide-key-round" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg>
+                </span>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  class="vault-input"
+                  placeholder="••••••••"
+                  autocomplete="current-password"
+                  value="admin123"
+                />
+                <!-- Toggle Password Visibility -->
+                <button
+                  type="button"
+                  id="togglePasswordBtn"
+                  class="vault-eye-btn"
+                  aria-label="Toggle password visibility"
+                  onclick="(function(btn){ var p = document.getElementById('password'); if(p.type === 'password'){ p.type = 'text'; } else { p.type = 'password'; } })(this)"
+                >
+                  <svg id="eyeIcon" class="lucide lucide-eye" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Options Row -->
+            <div class="vault-options-row">
+              <label class="vault-remember-label">
+                <input id="rememberMe" name="rememberMe" type="checkbox" checked />
+                <span>Persist Session</span>
+              </label>
+              <span class="vault-kbd-hint">
+                <kbd>↵ Enter</kbd> to unlock
+              </span>
+            </div>
+
+            <!-- Primary Submit CTA with Glow -->
+            <button
+              type="submit"
+              id="loginSubmitBtn"
+              class="vault-submit-btn btn-submit-chamber"
+            >
+              <span>Enter Chamber Vault</span>
+              <svg class="lucide lucide-arrow-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
+          </form>
+
+          <!-- Divider -->
+          <div class="vault-divider">
+            <div class="vault-divider-line" aria-hidden="true"><div></div></div>
+            <span class="vault-divider-text">OR PUBLIC ACCESS</span>
+          </div>
+
+          <!-- Secondary Guest CTA -->
+          <button
+            type="button"
+            id="guestModeBtn"
+            class="vault-guest-btn btn-guest-chamber"
+            onclick="handleGuestLogin(event)"
+          >
+            <svg class="lucide lucide-shield-check" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+            <span>Open Public Cause List & Inquiry</span>
+          </button>
+
+          <!-- Error Alert Container -->
+          <p id="loginError" class="error-message" role="alert"></p>
+
+          <!-- Security Footer Info -->
+          <footer class="vault-footer-security">
+            <div class="vault-security-pill">
+              <span class="vault-status-dot"></span>
+              <span>Chamber Mesh Online</span>
+            </div>
+            <div>
+              <span>256-Bit Hardware Keystore</span>
+            </div>
+          </footer>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         SECTION 2: GUEST PORTAL SCREEN (PUBLIC CASE TRACKING)
+         Raw Format:
+         #guestScreen (.guest-screen.hidden)
+         ├── header.guest-header-bar (.materialize-nav)
+         │   └── .nav-wrapper (Brand, Desktop Install Button, Logout Button)
+         └── .guest-content
+             ├── .search-panel (Heading, input#guestSearch)
+             ├── .search-results-panel (table#guestCasesTable)
+             └── #guestCaseDetailsSection
+                 ├── .case-details-header (#guestCaseTypeBadge, #guestDetailPrintBtn)
+                 ├── #guestCaseDetailsEmpty (Placeholder prompt)
+                 └── #guestCaseDetailsContent (.case-details-grid)
+         ========================================================================== -->
+    <div id="guestScreen" class="guest-screen hidden">
+      <header class="guest-header-bar materialize-nav">
+        <div class="nav-wrapper">
+          <div class="header-left-section">
+            <div class="brand-logo casebook-brand" id="casebookGuestTopnavBrand">
+              <iconify-icon icon="lucide:scale" class="brand-fa-icon"></iconify-icon>
+              <span class="brand-name">CaseBook</span>
+              <span class="system-tag guest-tag">Guest Portal</span>
+            </div>
+          </div>
+          <div class="header-right-section nav-right-actions">
+            <button
+              type="button"
+              id="guestDesktopInstallBtn"
+              class="nav-install-btn nav-icon-action-btn"
+              onclick="triggerPwaInstall()"
+              title="Install CaseBook Desktop App"
+              aria-label="Install CaseBook Desktop App"
+            >
+              <iconify-icon icon="lucide:download"></iconify-icon>
+            </button>
+            <button
+              id="guestLogoutBtn"
+              class="logout-btn nav-logout-btn nav-icon-action-btn"
+              onclick="handleLogout(event)"
+              title="Exit Guest Portal"
+              aria-label="Exit Guest Portal"
+            >
+              <iconify-icon icon="lucide:log-out"></iconify-icon>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div class="guest-content">
+        <div class="search-panel">
+          <h2>Track Case Hearing</h2>
+          <input
+            type="text"
+            id="guestSearch"
+            placeholder="Enter your Case Number or Mobile Number..."
+            aria-label="Search your case"
+            enterkeyhint="search"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="search-results-panel">
+          <h3>Search Results</h3>
+          <div
+            class="table-responsive overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm ring-1 ring-slate-900/5"
+          >
+            <table
+              id="guestCasesTable"
+              class="min-w-full divide-y divide-slate-200 text-left text-sm text-slate-700 search-results-table"
+            >
+              <thead
+                class="bg-slate-50 text-slate-700 font-semibold text-xs uppercase tracking-wider"
+              >
+                <tr>
+                  <th>Case Number</th>
+                  <th>Case Name</th>
+                  <th>Client</th>
+                  <th>Party Name</th>
+                  <th>Next Hearing Date</th>
+                  <th class="table-actions-th">Action</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Complete Case Details Card Beneath Guest Search Table -->
+        <div id="guestCaseDetailsSection" class="case-details-wrapper">
+          <div class="case-details-header">
+            <div>
+              <h3><iconify-icon icon="lucide:clipboard-list"></iconify-icon>Case Full Details</h3>
+              <span id="guestCaseTypeBadge" class="case-badge">Select a Case</span>
+            </div>
+            <button
+              type="button"
+              id="guestDetailPrintBtn"
+              class="dossier-action-btn print-action"
+              onclick="printCurrentGuestCaseDossier()"
+              title="Print Case Details"
+            >
+              <iconify-icon icon="lucide:printer"></iconify-icon>
+              Print Case
+            </button>
+          </div>
+          <div id="guestCaseDetailsEmpty" class="case-details-empty">
+            <p><iconify-icon icon="lucide:search"></iconify-icon> Search or click any case row in the table above to view all its details here.</p>
+          </div>
+          <div id="guestCaseDetailsContent" class="case-details-content hidden">
+            <div class="case-details-grid">
+              <div class="detail-item">
+                <span class="detail-label">Case Number</span>
+                <span class="detail-value" id="gDetailCaseNo">—</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Year</span>
+                <span class="detail-value" id="gDetailCaseYear">—</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Case Type</span>
+                <span class="detail-value" id="gDetailCaseType">—</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Court</span>
+                <span class="detail-value" id="gDetailCourtName">—</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Filing Date</span>
+                <span class="detail-value" id="gDetailFilingDate">—</span>
+              </div>
+              <div class="detail-item highlight-card">
+                <span class="detail-label">Next Hearing Date</span>
+                <span class="detail-value highlight" id="gDetailNextHearing">—</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Party / Case Name</span>
+                <span class="detail-value" id="gDetailCaseName">—</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Client Name</span>
+                <span class="detail-value" id="gDetailClient">—</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Document / Order Sheet</span>
+                <span class="detail-value" id="gDetailDocLink">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         SECTION 3: ADMIN MAIN APPLICATION SHELL
+         Raw Format:
+         #adminScreen (.page-shell.hidden)
+         ├── #sidebarOverlay (.sidebar-overlay: Mobile Backdrop)
+         ├── nav.sidebar (.sidenav: Author profile + Full navigation link hierarchy)
+         ├── main.content (.content: Active Workspace Tabs)
+         └── footer#fixedBottomNav (.fixed-bottom-nav: Mobile Bottom Bar)
+         ========================================================================== -->
+    <div id="adminScreen" class="page-shell hidden">
+      <!-- Header Bar: CaseBook Top Navigation Bar -->
+      <header
+        class="top-header materialize-nav sticky top-0 z-[1000] w-full h-14 border-b border-[var(--border-subtle)] shadow-sm"
+        id="casebookTopHeader"
+      >
+        <div
+          class="nav-wrapper w-full h-full max-w-[1920px] mx-auto px-2 sm:px-6 flex items-center justify-between"
+        >
+          <!-- Left Section: 1-Hamburger, 2-Brand Logo, 3-Brand Name -->
+          <div class="header-left-section flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <!-- 1. Hamburger Icon -->
+            <button
+              type="button"
+              id="sidebarToggleBtn"
+              class="mobile-menu-btn flex items-center justify-center cursor-pointer"
+              onclick="toggleMobileSidebar()"
+              aria-label="Toggle navigation menu"
+              title="Open navigation menu"
+            >
+              <svg class="lucide lucide-menu" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="4" x2="20" y1="12" y2="12"></line>
+                <line x1="4" x2="20" y1="6" y2="6"></line>
+                <line x1="4" x2="20" y1="18" y2="18"></line>
+              </svg>
+            </button>
+
+            <!-- 2. Brand Logo & 3. Brand Name -->
+            <a
+              href="javascript:void(0);"
+              onclick="showTab('home')"
+              id="casebookTopnavBrand"
+              class="brand-logo casebook-brand flex items-center gap-1.5 sm:gap-2 group cursor-pointer select-none no-underline"
+              title="CaseBook Dashboard"
+            >
+              <!-- 2. Brand Logo (icon) -->
+              <svg class="lucide lucide-scale brand-scale-icon text-xl sm:text-2xl" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path>
+                <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path>
+                <path d="M7 21h10"></path>
+                <path d="M12 3v18"></path>
+                <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"></path>
+              </svg>
+              <!-- 3. Brand Name (CaseBook) -->
+              <span class="brand-name font-sans text-base sm:text-2xl font-bold tracking-tight">
+                CaseBook
+              </span>
+            </a>
+          </div>
+
+          <!-- Right Section: 3-Searchbar, 2-Download Btn, 1-Logout Btn -->
+          <div class="header-right-section nav-right-actions flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            <!-- Topnav Undated Cases Action Button (Left of Search Trigger) -->
+            <button
+              type="button"
+              id="topnavUndatedBtn"
+              class="topnav-undated-btn"
+              onclick="showTab('undated', event)"
+              title="Click to view and forward dates for undated cases"
+              aria-label="Undated cases requiring next hearing date"
+            >
+              <svg class="lucide lucide-calendar-off undated-btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4.18 4.18A2 2 0 0 0 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 1.82-1.18"></path>
+                <path d="M21 15.5V6a2 2 0 0 0-2-2H9.5"></path>
+                <path d="M16 2v4"></path>
+                <path d="M3 10h7"></path>
+                <path d="M21 10h-5.5"></path>
+                <line x1="2" x2="22" y1="2" y2="22"></line>
+              </svg>
+              <span class="undated-btn-count" id="topnavUndatedCount">0</span>
+              <span class="undated-btn-label">undated cases</span>
+            </button>
+
+            <!-- 3. Searchbar (Collapsible inside navbar, matching user target design) -->
+            <div class="search-container topnav-search-container relative" id="searchContainer">
+              <!-- Collapsed Trigger Button: Image 3 (Clean 36x36 square icon button) -->
+              <button
+                type="button"
+                class="search-trigger-btn nav-icon-action-btn flex items-center justify-center cursor-pointer"
+                id="searchTriggerBtn"
+                onclick="toggleTopnavSearch(true)"
+                title="Search case number, case name, party... (Ctrl+K)"
+                aria-label="Search cases, clients, courts"
+              >
+                <svg class="lucide lucide-search search-trigger-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.3-4.3"></path>
+                </svg>
+              </button>
+
+              <!-- Search Input Wrapper (Stays 100% INSIDE the 56px navbar - Image 4) -->
+              <div class="search-wrapper" id="searchWrapper">
+                <span class="search-left-icon" aria-hidden="true">
+                  <svg class="lucide lucide-search" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.3-4.3"></path>
+                  </svg>
+                </span>
+
+                <input
+                  type="text"
+                  class="search-input"
+                  id="searchInput"
+                  placeholder="Search case number, case name, party..."
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+
+                <button
+                  type="button"
+                  class="clear-btn"
+                  id="clearBtn"
+                  aria-label="Clear search input"
+                  title="Clear input"
+                >
+                  <svg class="lucide lucide-x" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M18 6 6 18"></path>
+                    <path d="m6 6 12 12"></path>
+                  </svg>
+                </button>
+
+                <button
+                  type="button"
+                  class="close-search-btn"
+                  id="closeSearchBtn"
+                  onclick="handleTopnavSearchDismiss(event)"
+                  aria-label="Close search"
+                  title="Close (Esc)"
+                >
+                  <svg class="lucide lucide-x" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M18 6 6 18"></path>
+                    <path d="m6 6 12 12"></path>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Results List (Opens cleanly BELOW the navbar) -->
+              <div class="results-dropdown" id="resultsDropdown"></div>
+            </div>
+
+            <!-- 2. Download Button Icon (PWA Install) -->
+            <button
+              type="button"
+              id="desktopInstallBtn"
+              class="nav-install-btn nav-icon-action-btn flex items-center justify-center cursor-pointer"
+              onclick="triggerPwaInstall()"
+              title="Install CaseBook Desktop App"
+              aria-label="Install CaseBook Desktop App"
+            >
+              <svg class="lucide lucide-download" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" x2="12" y1="15" y2="3"></line>
+              </svg>
+            </button>
+
+            <!-- 1. Logout Button Icon -->
+            <button
+              type="button"
+              id="adminLogoutBtn"
+              class="logout-btn nav-logout-btn nav-icon-action-btn flex items-center justify-center cursor-pointer"
+              onclick="handleAdminLogout(event)"
+              title="Logout from CaseBook"
+              aria-label="Logout from CaseBook"
+            >
+              <svg class="lucide lucide-log-out" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" x2="9" y1="12" y2="12"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+      <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
+      <!-- Sidebar Navigation: Materialize Sidenav (#00695c) -->
+      <div class="sidebar sidenav">
+        <!-- 1. Profile Card (Top Section) -->
+        <div
+          class="sidebar-profile-card cursor-pointer"
+          id="sidebarProfileCard"
+          onclick="showTab('settings', event)"
+          role="button"
+          tabindex="0"
+          title="Chambers Profile &amp; Settings"
+          aria-label="Chambers Profile &amp; Settings"
+        >
+          <div class="profile-card-inner group">
+            <div class="profile-avatar-box">
+              <span id="sidebarAvatarInitial">A</span>
+              <span class="profile-status-dot" title="Online"></span>
+            </div>
+            <div class="profile-info">
+              <div class="profile-name" id="sidebarProfileName">Atul Kumar Mishra</div>
+              <div class="profile-role" id="sidebarProfileRole">Advocate &amp; Developer</div>
+            </div>
+            <iconify-icon icon="lucide:chevron-right" class="profile-chevron"></iconify-icon>
+          </div>
+        </div>
+
+        <div class="subheader">Overview & Schedule</div>
+        <a href="#" onclick="showTab('home', event)" class="active nav-item-legacy-home" id="sidebarNavHome" title="Home Dashboard">
+          <iconify-icon icon="lucide:home" class="nav-icon"></iconify-icon>
+          <span class="nav-text">Home Dashboard</span>
+        </a>
+        <a href="#" onclick="showTab('newhome', event)" id="sidebarNavNewHome" title="Home (Zen Dashboard)">
+          <iconify-icon icon="lucide:layout-dashboard" class="nav-icon"></iconify-icon>
+          <span class="nav-text nav-text-desktop">NewHome</span>
+          <span class="nav-text nav-text-mobile">Home</span>
+          <span class="badge">Zen</span>
+        </a>
+        <a href="#" onclick="showTab('causelist', event)" title="My Daily Cause List">
+          <iconify-icon icon="lucide:scroll-text" class="nav-icon"></iconify-icon>
+          <span class="nav-text">My Cause List</span>
+          <span class="badge badge-upcoming" id="causeListNavCount">0</span>
+        </a>
+        <a href="#" onclick="showTab('upcoming', event)" title="Upcoming Cases (7 Days)">
+          <iconify-icon icon="lucide:calendar-clock" class="nav-icon"></iconify-icon>
+          <span class="nav-text">Upcoming (7 Days)</span>
+          <span class="badge badge-upcoming" id="upcomingNavCount">0</span>
+        </a>
+        <a href="#" onclick="showTab('calendar', event)" title="Calendar Scheduler">
+          <iconify-icon icon="lucide:calendar" class="nav-icon"></iconify-icon>
+          <span class="nav-text">Calendar Scheduler</span>
+        </a>
+        <a href="#" onclick="showTab('todo', event)" title="To-Do & Deadlines">
+          <iconify-icon icon="lucide:list-todo" class="nav-icon"></iconify-icon>
+          <span class="nav-text">To-Do & Deadlines</span>
+          <span class="badge badge-todo" id="todoNavCount">0</span>
+        </a>
+
+        <div class="divider"></div>
+        <div class="subheader">Case Workflow</div>
+        <a
+          href="#"
+          onclick="showTab('manage', event)"
+          title="Case Operations (Add, Update, Delete)"
+        >
+          <iconify-icon icon="lucide:folder-cog" class="nav-icon"></iconify-icon>
+          <span class="nav-text">Case Operations</span>
+        </a>
+        <a href="#" onclick="showTab('hearing', event)" title="Forward Hearing Dates">
+          <iconify-icon icon="lucide:calendar-arrow-up" class="nav-icon"></iconify-icon>
+          <span class="nav-text">Forward Dates</span>
+        </a>
+        <a href="#" onclick="showTab('transfer', event)" title="Transfer Case">
+          <iconify-icon icon="lucide:arrow-left-right" class="nav-icon"></iconify-icon>
+          <span class="nav-text">Transfer Case</span>
+        </a>
+        <a href="#" onclick="showTab('courts', event)" title="Manage Courts Directory">
+          <iconify-icon icon="lucide:landmark" class="nav-icon"></iconify-icon>
+          <span class="nav-text">Manage Courts</span>
+        </a>
+        <a href="#" onclick="showTab('helpers', event)" title="Court Helpers Directory">
+          <iconify-icon icon="lucide:contact-2" class="nav-icon"></iconify-icon>
+          <span class="nav-text">Court Helpers Directory</span>
+          <span class="badge" id="helpersNavCount">0</span>
+        </a>
+
+        <div class="divider"></div>
+        <div class="subheader">Finance &amp; Accounts</div>
+        <a
+          href="#"
+          onclick="showTab('paisa', event)"
+          id="navLinkPaisa"
+          title="Paisa Manager"
+        >
+          <iconify-icon icon="lucide:indian-rupee" class="nav-icon"></iconify-icon>
+          <span class="nav-text">Paisa Manager</span>
+          <span
+            class="badge"
+            id="paisaNavBadge"
+          >
+            ₹0
+          </span>
+        </a>
+
+        <div class="divider"></div>
+        <div class="subheader">Case Registers</div>
+        <a href="#" onclick="showTab('all', event)" title="Cases Register (Table &amp; Cards)">
+          <iconify-icon icon="lucide:briefcase" class="nav-icon"></iconify-icon>
+          <span class="nav-text">Cases Register</span>
+          <span class="badge" id="allCasesNavCount">0</span>
+        </a>
+        <a href="#" onclick="showTab('undated', event)" title="Undated Cases Register">
+          <iconify-icon icon="lucide:calendar-off" class="nav-icon"></iconify-icon>
+          <span class="nav-text">Undated Cases</span>
+          <span class="badge badge-undated" id="undatedNavCount">0</span>
+        </a>
+        <a href="#" onclick="showTab('detail', event)" id="sidebarNavDetail" title="Case Details Dossier">
+          <iconify-icon icon="lucide:file-text" class="nav-icon"></iconify-icon>
+          <span class="nav-text">Case Details</span>
+        </a>
+        <a href="#" onclick="showTab('disposed', event)" title="Disposed Cases">
+          <iconify-icon icon="lucide:check-circle-2" class="nav-icon"></iconify-icon>
+          <span class="nav-text">Disposed Cases</span>
+          <span class="badge badge-disposed" id="disposedCount">0</span>
+        </a>
+        <a href="#" onclick="showTab('archived', event)" title="Archived Cases">
+          <iconify-icon icon="lucide:archive" class="nav-icon"></iconify-icon>
+          <span class="nav-text">Archived Cases</span>
+          <span class="badge badge-archived" id="archivedCount">0</span>
+        </a>
+
+        <div class="divider"></div>
+        <div class="subheader">Database & Cloud Sync</div>
+
+        <a href="#" onclick="showTab('livecrud', event)" title="Live CRUD">
+          <iconify-icon icon="lucide:database" class="nav-icon"></iconify-icon>
+          <span class="nav-text">Live CRUD (Simple)</span>
+        </a>
+
+        <div class="divider"></div>
+        <div class="subheader">Settings</div>
+        <a href="#" onclick="showTab('settings', event)" title="Settings &amp; Cloud Database">
+          <iconify-icon icon="lucide:settings" class="nav-icon"></iconify-icon>
+          <span class="nav-text">Settings &amp; Cloud</span>
+        </a>
+        <a href="#" onclick="showTab('about', event)" title="About & Documentation">
+          <iconify-icon icon="lucide:book-open" class="nav-icon"></iconify-icon>
+          <span class="nav-text">About &amp; Manual</span>
+        </a>
+        <div class="divider"></div>
+        <div class="sidenav-theme-row">
+          <button
+            type="button"
+            id="themeToggleBtn"
+            class="sidenav-theme-btn"
+            onclick="toggleCaseBookTheme(event)"
+            title="Toggle Dark / Light Mode"
+            aria-label="Toggle Dark / Light Mode"
+          >
+            <div class="flex items-center gap-2.5">
+              <iconify-icon icon="lucide:moon" id="themeModeIcon" class="w-4 h-4"></iconify-icon>
+              <span id="themeToggleLabel" class="text-xs font-semibold">Dark Mode</span>
+            </div>
+            <div class="theme-switch-track">
+              <div class="theme-switch-knob"></div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main content area where each admin tab is displayed -->
+      <div class="content">
+        <!-- Home Dashboard Tab: Professional Executive Overview -->
+        <div id="home" class="tab active" data-tab-src="components/tabs/home/tab-home.html"></div>
+
+        <!-- New Home Dashboard Tab: Zen Modern Layout -->
+        <div id="newhome" class="tab" data-newhome-scope data-tab-src="components/tabs/newhome/tab-newhome.html"></div>
+
+        <!-- My Cases tab: complete searchable and filterable registry of all cases -->
+        <div id="search" class="tab"><input type="hidden" id="globalSearch" style="display: none;" /></div>
+
+        <!-- Daily Cause List Tab: Court Appearance Board & Daily Matters Schedule -->
+        <div
+          id="causelist"
+          class="tab"
+          data-causelist-scope
+          data-tab-src="components/tabs/causelist/tab-causelist.html"
+        ></div>
+
+        <!-- Upcoming Hearings Tab: Executive Judicial Docket Design -->
+        <div
+          id="upcoming"
+          class="tab"
+          data-upcoming-scope
+          data-tab-src="components/tabs/upcoming/tab-upcoming.html"
+        ></div>
+
+        <!-- Case To-Do & Deadlines Tab -->
+        <div id="todo" class="tab" data-todo-scope data-tab-src="components/tabs/todo/tab-todo.html"></div>
+
+        <!-- Calendar View Tab: visual monthly scheduler for court hearings -->
+        <div
+          id="calendar"
+          class="tab"
+          data-calendar-scope
+          data-tab-src="components/tabs/calendar/tab-calendar.html"
+        ></div>
+
+        <!-- Add Case tab: form for creating a new case entry -->
+        <!-- Unified Case Operations Tab (Add, Update, Delete) -->
+        <div id="manage" class="tab" data-manage-scope data-tab-src="components/tabs/manage/tab-manage.html"></div>
+
+        <div id="add" class="tab" data-add-scope data-tab-src="components/tabs/add/tab-add.html"></div>
+
+        <!-- Courts tab: manage the list of courts available in the case form -->
+        <div id="courts" class="tab" data-tab-src="components/tabs/courts/tab-courts.html"></div>
+
+        <!-- Court Helpers & Staff Directory tab -->
+        <div id="helpers" class="tab" data-tab-src="components/tabs/helpers/tab-helpers.html"></div>
+
+        <div id="paisa" class="tab" data-tab-src="components/tabs/paisa/tab-paisa.html"></div>
+
+        <!-- Transfer Case tab: transfer case to another court/forum and maintain audit trail -->
+        <div
+          id="transfer"
+          class="tab"
+          data-transfer-scope
+          data-tab-src="components/tabs/transfer/tab-transfer.html"
+        ></div>
+
+        <!-- Delete Case tab: remove an existing case record -->
+        <div id="delete" class="tab" data-delete-scope data-tab-src="components/tabs/delete/tab-delete.html"></div>
+
+        <!-- Update Case tab: modify an existing case record -->
+        <div id="update" class="tab" data-update-scope data-tab-src="components/tabs/update/tab-update.html"></div>
+
+        <!-- Update Hearing tab: track hearing date and status updates -->
+        <div id="hearing" class="tab" data-hearing-scope data-tab-src="components/tabs/hearing/tab-hearing.html"></div>
+
+        <!-- Dedicated Undated Cases Tab: rapid diary date scheduling -->
+        <div id="undated" class="tab" data-undated-scope data-tab-src="components/tabs/undated/tab-undated.html"></div>
+
+        <!-- All Cases Master Register Tab: Unified table with real-time filters -->
+        <!-- Case Cards Board: Modern CaseBook v3 Layout -->
+        <div id="cards" class="tab"></div>
+
+        <div id="all" class="tab" data-all-scope data-tab-src="components/tabs/all/tab-all.html"></div>
+
+        <!-- Dedicated Case Details Dossier Tab -->
+        <div id="detail" class="tab" data-detail-scope data-tab-src="components/tabs/detail/tab-detail.html"></div>
+
+        <!-- Hidden Legacy Mounts for safe script compatibility -->
+        <div style="display: none;" aria-hidden="true">
+          <div id="civil" class="tab">
+            <table id="civilCasesTable">
+              <tbody></tbody>
+            </table>
+          </div>
+          <div id="state" class="tab">
+            <table id="stateCasesTable">
+              <tbody></tbody>
+            </table>
+          </div>
+          <div id="criminal" class="tab">
+            <table id="criminalCasesTable">
+              <tbody></tbody>
+            </table>
+          </div>
+          <div id="family" class="tab">
+            <table id="familyCasesTable">
+              <tbody></tbody>
+            </table>
+          </div>
+          <div id="revenue" class="tab">
+            <table id="revenueCasesTable">
+              <tbody></tbody>
+            </table>
+          </div>
+          <div id="misccivil" class="tab">
+            <table id="miscCivilCasesTable">
+              <tbody></tbody>
+            </table>
+          </div>
+          <div id="misccriminal" class="tab">
+            <table id="miscCriminalCasesTable">
+              <tbody></tbody>
+            </table>
+          </div>
+          <div id="complaint" class="tab">
+            <table id="complaintCasesTable">
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Disposed Cases tab: list closed or disposed matters -->
+        <div id="disposed" class="tab" data-disposed-scope data-tab-src="components/tabs/disposed/tab-disposed.html"></div>
+
+        <!-- Archived Cases tab: client stopped coming or advocate changed -->
+        <div id="archived" class="tab" data-archived-scope data-tab-src="components/tabs/archived/tab-archived.html"></div>
+
+        <!-- Live CRUD (Simple) Tab -->
+        <div
+          id="livecrud"
+          class="tab"
+          data-livecrud-scope
+          data-tab-src="components/tabs/livecrud/tab-livecrud.html"
+        ></div>
+
+        <!-- Change Password & Credentials Tab -->
+        <div
+          id="settings"
+          class="tab"
+          data-tab-src="components/tabs/settings/tab-settings.html"
+        ></div>
+
+        <!-- About Page (v7.45) -->
+        <div id="about" class="tab" data-about-scope data-tab-src="components/tabs/about/tab-about.html"></div>
+      </div>
+
+      <!-- CaseBook Adaptive Smart Dock Navigation (Mobile Only) -->
+      <footer class="cb-smart-dock" id="fixedBottomNav" aria-label="Quick Page Navigation">
+        <button
+          type="button"
+          class="bottom-nav-btn active"
+          id="bottomNavHomeBtn"
+          onclick="showTab('newhome', event)"
+          title="Home Dashboard (Zen)"
+        >
+          <span class="bottom-nav-icon"><svg class="lucide lucide-home" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+          <span class="bottom-nav-label">Home</span>
+        </button>
+        <button
+          type="button"
+          class="bottom-nav-btn"
+          id="bottomNavTasksBtn"
+          onclick="showTab('todo', event)"
+          title="Tasks / To-Do"
+        >
+          <span class="bottom-nav-icon"><svg class="lucide lucide-circle-check" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span>
+          <span class="bottom-nav-label">Tasks</span>
+        </button>
+        <button
+          type="button"
+          class="bottom-nav-btn"
+          id="bottomNavPaisaBtn"
+          onclick="showTab('paisa', event)"
+          title="Paisa (Financials)"
+        >
+          <span class="bottom-nav-icon"><svg class="lucide lucide-indian-rupee" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12"/><path d="M6 8h12"/><path d="m6 13 8.5 8"/><path d="M6 13h3"/><path d="M9 13c6.667 0 6.667-10 0-10"/></svg></span>
+          <span class="bottom-nav-label">Paisa</span>
+        </button>
+        <button
+          type="button"
+          class="bottom-nav-btn"
+          id="bottomNavHistoryBtn"
+          onclick="showTab('causelist', event)"
+          title="Daily Cause List &amp; History"
+        >
+          <span class="bottom-nav-icon"><svg class="lucide lucide-scroll-text" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg></span>
+          <span class="bottom-nav-label">Cause List</span>
+        </button>
+        <button
+          type="button"
+          class="bottom-nav-btn"
+          id="bottomNavMoreBtn"
+          onclick="toggleMobileSidebar()"
+          title="More Tools &amp; Menu"
+        >
+          <span class="bottom-nav-icon"><svg class="lucide lucide-menu" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg></span>
+          <span class="bottom-nav-label">More</span>
+        </button>
+      </footer>
+    </div>
+
+    <!-- ==========================================================================
+         SECTION 4: PRINTABLE DOCUMENTS & PDF EXPORTS (Modularized)
+         ========================================================================== -->
+    <div
+      id="printTemplatesContainer"
+      data-template-src="components/print/print-templates.html"
+    ></div>
+    <!-- Case Modals Container (Modularized) -->
+    <div id="caseModalsContainer" data-modal-src="components/modals/case-modals.html"></div>
+
+    <!-- ============================================================
+         TOAST REGION (Modular Multi-Toast System)
+         ============================================================ -->
+    <div id="toast-region" class="toast-region" role="status" aria-live="polite" aria-atomic="false"></div>
+
+    <!-- Floating In-App Reminder Alerts Container -->
+    <div
+      id="todoFloatingAlertContainer"
+      class="todo-floating-alert-container"
+      aria-live="polite"
+    ></div>
+
+    <!-- ==========================================================================
+         SECTION 6: FLOATING CONTROLS & BACKDROPS
+         Raw Format:
+         ├── #mobileFilterBackdrop (.mobile-filter-backdrop: Mobile Drawer Mask)
+         └── button.mobile-fab-btn (.mobile-fab-btn: Floating Action Button + Add Case)
+         ========================================================================== -->
+    <!-- Mobile Filter Backdrop (for sliding drawer) -->
+    <div
+      id="mobileFilterBackdrop"
+      class="mobile-filter-backdrop"
+      onclick="closeMobileFilterDrawer()"
+    ></div>
+
+    <!-- Mobile Floating Action Button (FAB) for + Add Case -->
+    <button
+      type="button"
+      class="mobile-fab-btn"
+      onclick="showTab('add')"
+      title="Add New Case"
+      aria-label="Add New Case"
+    >
+      <svg class="lucide lucide-plus" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+    </button>
+
+    <!-- ==========================================================================
+         SECTION 7: CLIENT-SIDE JAVASCRIPT & RUNTIME LIBRARIES
+         Raw Format:
+         ├── Supabase JS SDK CDN (@supabase/supabase-js@2)
+         ├── Modern Chambers Footer Web Component (components/chambers-footer.js)
+         └── Core Application Controller (admin.js)
+         ========================================================================== -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"
+      defer
+    ></script>
+    <!-- Modular Tab Modules -->
+    <script src="components/tabs/paisa/tab-paisa.js?v=8.52" defer></script>
+    <script src="components/tabs/livecrud/tab-livecrud.js?v=8.47" defer></script>
+    <script src="components/tabs/todo/tab-todo.js?v=8.36" defer></script>
+    <script src="components/tabs/upcoming/tab-upcoming.js?v=12.0" defer></script>
+    <script src="components/tabs/causelist/tab-causelist.js?v=18.1" defer></script>
+    <script src="components/tabs/calendar/tab-calendar.js?v=8.38" defer></script>
+    <script src="components/tabs/add/tab-add.js?v=9.1" defer></script>
+    <script src="components/tabs/update/tab-update.js?v=8.37" defer></script>
+    <script src="components/tabs/manage/tab-manage.js?v=9.0" defer></script>
+    <script src="components/tabs/hearing/tab-hearing.js?v=9.72" defer></script>
+    <script src="components/tabs/undated/tab-undated.js?v=2.6" defer></script>
+    <script src="components/tabs/transfer/tab-transfer.js?v=9.61" defer></script>
+    <script src="components/tabs/delete/tab-delete.js?v=8.37" defer></script>
+    <script src="components/tabs/courts/tab-courts.js?v=9.71" defer></script>
+    <script src="components/tabs/home/tab-home.js?v=9.54" defer></script>
+    <script src="components/tabs/newhome/tab-newhome.js?v=12.0" defer></script>
+    <script src="components/tabs/helpers/tab-helpers.js?v=8.41" defer></script>
+    <script src="components/tabs/all/tab-all.js?v=9.43" defer></script>
+    <script src="components/tabs/detail/tab-detail.js?v=1.0" defer></script>
+    <script src="components/tabs/settings/tab-settings.js?v=8.36" defer></script>
+    <script src="components/tabs/about/tab-about.js?v=8.38" defer></script>
+    <script src="components/tabs/disposed/tab-disposed.js?v=9.03" defer></script>
+    <script src="components/tabs/archived/tab-archived.js?v=1.0" defer></script>
+    <script src="services/supabaseClient.js"></script>
+    <script src="services/caseService.js"></script>
+    <script src="services/todoService.js"></script>
+    <script src="services/ancillaryService.js"></script>
+    <script src="utils/dateUtils.js"></script>
+    <script src="utils/uiUtils.js"></script>
+    <script src="utils/caseNumberUtils.js"></script>
+    <script src="utils/exportUtils.js"></script>
+    <script src="utils/tooltipController.js?v=9.67" defer></script>
+    <script src="components/print/print-templates.js?v=8.37" defer></script>
+    <script src="components/modals/case-modals.js?v=9.20" defer></script>
+    <script src="components/chambers-footer.js?v=1.0" defer></script>
+    <script src="components/custom-calendar.js?v=1.0" defer></script>
+    <script src="admin.js?v=9.77" defer></script>
+  </body>
+</html>

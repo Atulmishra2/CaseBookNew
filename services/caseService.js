@@ -1,0 +1,2743 @@
+// ==============================================================================
+// Case Data Service (Supabase CRUD)
+// ==============================================================================
+
+function isCaseStatusDisposed(statusStr) {
+  if (!statusStr) return false;
+  const s = String(statusStr).trim().toLowerCase();
+  return (
+    s.includes('dispose') ||
+    s.includes('decid') || // 'decided', 'decide', 'decision', 'final order / फैसला'
+    s.includes('फैसला') ||
+    s.includes('निस्तारित') ||
+    s.includes('acquit') ||
+    s.includes('convict') ||
+    s.includes('dismiss') ||
+    s.includes('decree') ||
+    s.includes('closed') ||
+    s.includes('settle') ||
+    s.includes('compromise')
+  );
+}
+
+function isCaseStatusArchived(statusStr) {
+  if (!statusStr) return false;
+  const s = String(statusStr).trim().toLowerCase();
+  return (
+    s.includes('archive') ||
+    s.includes('client left') ||
+    s.includes('client stopped') ||
+    s.includes('advocate changed') ||
+    s.includes('noc issued')
+  );
+}
+
+function isCaseArchived(c) {
+  if (!c) return false;
+  const statusStr = c.caseStatus || c.status || c.case_status || '';
+  return isCaseStatusArchived(statusStr);
+}
+
+function getArchivedReasonMeta(c) {
+  const raw = String((c && (c.caseStatus || c.status || c.case_status)) || '').trim().toLowerCase();
+  if (raw.includes('advocate') || raw.includes('counsel') || raw.includes('noc')) {
+    return {
+      key: 'advocate_changed',
+      label: 'Advocate Changed',
+      statusValue: 'Archived: Advocate Changed',
+      badgeClass: 'badge-archived-advocate'
+    };
+  }
+  if (raw.includes('client') || raw.includes('stopped') || raw.includes('left')) {
+    return {
+      key: 'client_left',
+      label: 'Client Stopped Coming',
+      statusValue: 'Archived: Client Left',
+      badgeClass: 'badge-archived-client'
+    };
+  }
+  return {
+    key: 'other',
+    label: 'Archived',
+    statusValue: 'Archived',
+    badgeClass: 'badge-archived'
+  };
+}
+
+function isCaseDisposed(c) {
+  if (!c) return false;
+  if (isCaseArchived(c)) return false; // Archived cases belong to Archived List, not Disposed Cases
+  const statusStr = c.caseStatus || c.status || c.case_status || '';
+  if (isCaseStatusDisposed(statusStr)) return true;
+  if (Boolean(c.disposalComment || c.disposal_comment || c.disposalDate || c.disposal_date)) {
+    return true;
+  }
+  return false;
+}
+
+function isCaseUndated(c) {
+  if (!c) return false;
+  if (isCaseDisposed(c) || isCaseArchived(c)) return false; // Disposed or archived cases are NEVER undated!
+  const nh = c.nextHearing || c.next_hearing || '';
+  return (!nh || nh === '—' || nh === '-' || nh === 'null' || !String(nh).trim() || String(nh).toLowerCase() === 'undated');
+}
+
+function isCaseWaitingForInitialFiling(c) {
+  if (!c) return false;
+  const isDisposed = (typeof isCaseDisposed === 'function')
+    ? isCaseDisposed(c)
+    : (typeof window !== 'undefined' && typeof window.isCaseDisposed === 'function'
+      ? window.isCaseDisposed(c)
+      : (String(c.caseStatus || c.status || '').toLowerCase().includes('dispose') ||
+         String(c.caseStatus || c.status || '').toLowerCase().includes('decid') ||
+         Boolean(c.disposalComment || c.disposal_comment || c.disposalDate || c.disposal_date)));
+  if (isDisposed || isCaseArchived(c)) return false;
+
+  // Explicit status match
+  const status = String(c.caseStatus || c.status || '').trim().toLowerCase();
+  if (
+    status.includes('waiting for initial filing') ||
+    status.includes('awaiting first hearing') ||
+    status.includes('awaiting 1st hearing') ||
+    status.includes('waiting for first hearing')
+  ) {
+    return true;
+  }
+
+  // 1. Must be filed (has a valid filing date)
+  const fd = c.filingDate || c.crimeFilingDate || c.filing_date || '';
+  const strFd = String(fd).trim().toLowerCase();
+  const hasFilingDate = Boolean(
+    strFd &&
+    strFd !== '—' &&
+    strFd !== '-' &&
+    strFd !== 'null' &&
+    strFd !== 'undefined' &&
+    strFd !== 'invalid date'
+  );
+  if (!hasFilingDate) return false;
+
+  // 2. No next hearing date assigned yet (pahli hearing date nhi mili hai)
+  const nh = c.nextHearing || c.next_hearing || '';
+  const strNh = String(nh).trim().toLowerCase();
+  const hasNoNextHearing = (
+    !strNh ||
+    strNh === '—' ||
+    strNh === '-' ||
+    strNh === 'null' ||
+    strNh === 'undefined' ||
+    strNh === 'undated'
+  );
+  if (!hasNoNextHearing) return false;
+
+  // 3. No previous hearing (never had any hearing before)
+  const ph = c.previousHearing || c.previous_hearing || '';
+  const strPh = String(ph).trim().toLowerCase();
+  const hasNoPreviousHearing = (
+    !strPh ||
+    strPh === '—' ||
+    strPh === '-' ||
+    strPh === 'null' ||
+    strPh === 'undefined'
+  );
+  if (!hasNoPreviousHearing) return false;
+
+  // 4. No hearings recorded in allHearingRecords or attached to case object
+  if (Array.isArray(c.hearings) && c.hearings.length > 0) return false;
+
+  const cNo = String(c.caseNo || c.criminalCaseNumber || '').trim().toLowerCase();
+  const hearingsList = (typeof window !== 'undefined' && Array.isArray(window.allHearingRecords))
+    ? window.allHearingRecords
+    : (typeof allHearingRecords !== 'undefined' && Array.isArray(allHearingRecords) ? allHearingRecords : []);
+
+  if (cNo && hearingsList.length > 0) {
+    const hasHistory = hearingsList.some(h => {
+      const hNo = String(h.case_number || h.caseNo || '').trim().toLowerCase();
+      return hNo && hNo === cNo;
+    });
+    if (hasHistory) return false;
+  }
+
+  return true;
+}
+
+/**
+ * Returns an array of missing or placeholder field labels for a case record.
+ */
+function getCaseMissingFields(c) {
+  if (!c) return [];
+  const missing = [];
+  const cn = String(c.caseNo || c.criminalCaseNumber || c.case_number || '').trim();
+  if (!cn || /pending/i.test(cn) || cn.endsWith('-') || cn.endsWith('/') || !/\d/.test(cn)) {
+    missing.push('Case No.');
+  }
+  const cy = String(c.caseYear || c.crimeYear || c.case_year || '').trim();
+  if (!cy) missing.push('Year');
+  const fd = String(c.filingDate || c.crimeFilingDate || c.filing_date || '').trim();
+  if (!fd || fd === '—' || fd === '-') missing.push('Filing Date');
+  const ph = String(c.clientNumber || c.criminalClientNumber || c.client_number || '').trim();
+  if (!ph || ph === '1234567890' || ph === '1231567890' || /^0+$/.test(ph) || ph.replace(/\D/g, '').length < 10) {
+    missing.push('Client Phone');
+  }
+  const t = String(c.caseType || c.case_type || '').trim().toLowerCase();
+  if (t === 'state' || t === 'criminal' || t === 'misc_criminal' || t === 'complaint') {
+    const ps = String(c.policeStation || c.police_station || '').trim();
+    const sec = String(c.crimeSection || c.sectionAct || c.crime_section || '').trim();
+    const cr = String(c.crimeNumber || c.crime_number || '').trim();
+    if (!ps) missing.push('Police Station');
+    if (!sec || /to be updated|updated soon|pending/i.test(sec)) missing.push('Section');
+    if ((t === 'state' || t === 'criminal') && (!cr || /^0+$/.test(cr) || /to be updated|pending/i.test(cr))) {
+      missing.push('Crime No.');
+    }
+  }
+  return missing;
+}
+
+/**
+ * Returns true if the case has missing or placeholder registration fields.
+ */
+function isCaseIncomplete(c) {
+  return getCaseMissingFields(c).length > 0;
+}
+
+/**
+ * Returns normalized status metadata (key, label, badgeClass, icon, isActionRequired)
+ * for any case record, supporting Pending, Disposed, Undated, Not Bail Out, and Not Appeared.
+ */
+function getCaseStatusMeta(c) {
+  if (!c) {
+    return { key: 'pending', label: 'Pending', badgeClass: 'badge-pending', icon: 'clock', isActionRequired: false };
+  }
+  if (isCaseArchived(c)) {
+    const reasonMeta = getArchivedReasonMeta(c);
+    return {
+      key: 'archived',
+      label: reasonMeta.label,
+      badgeClass: 'badge-archived',
+      icon: 'archive',
+      isActionRequired: false
+    };
+  }
+  if (isCaseDisposed(c)) {
+    const raw = String(c.caseStatus || c.status || c.case_status || '').toLowerCase();
+    return {
+      key: 'disposed',
+      label: raw.includes('decid') || raw.includes('फैसला') ? 'Decided' : 'Disposed',
+      badgeClass: 'badge-disposed',
+      icon: 'check-circle-2',
+      isActionRequired: false
+    };
+  }
+  const rawStatus = String(c.caseStatus || c.status || c.case_status || '').trim().toLowerCase();
+  if (rawStatus === 'not bail out' || rawStatus.includes('not bail')) {
+    return {
+      key: 'not_bail_out',
+      label: 'Not Bail Out',
+      badgeClass: 'badge-not-bail-out',
+      icon: 'shield-alert',
+      isActionRequired: true
+    };
+  }
+  if (rawStatus === 'not appeared' || rawStatus === 'not appered' || rawStatus.includes('not appear')) {
+    return {
+      key: 'not_appeared',
+      label: 'Not Appeared',
+      badgeClass: 'badge-not-appeared',
+      icon: 'user-x',
+      isActionRequired: true
+    };
+  }
+  if (isCaseUndated(c)) {
+    return {
+      key: 'undated',
+      label: 'Undated',
+      badgeClass: 'badge-undated',
+      icon: 'calendar-clock',
+      isActionRequired: false
+    };
+  }
+  return {
+    key: 'pending',
+    label: 'Pending',
+    badgeClass: 'badge-pending',
+    icon: 'clock',
+    isActionRequired: false
+  };
+}
+
+var allCaseRecords = (typeof window !== 'undefined' && Array.isArray(window.allCaseRecords)) ? window.allCaseRecords : (typeof allCaseRecords !== 'undefined' ? allCaseRecords : []);
+var allHearingRecords = (typeof window !== 'undefined' && Array.isArray(window.allHearingRecords)) ? window.allHearingRecords : (typeof allHearingRecords !== 'undefined' ? allHearingRecords : []);
+var caseTasks = (typeof window !== 'undefined' && Array.isArray(window.caseTasks)) ? window.caseTasks : (typeof caseTasks !== 'undefined' ? caseTasks : []);
+var supabaseClient = (typeof window !== 'undefined' && window.supabaseClient) ? window.supabaseClient : (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+
+if (typeof window !== 'undefined') {
+  window.isCaseStatusDisposed = isCaseStatusDisposed;
+  window.isCaseDisposed = isCaseDisposed;
+  window.isCaseStatusArchived = isCaseStatusArchived;
+  window.isCaseArchived = isCaseArchived;
+  window.getArchivedReasonMeta = getArchivedReasonMeta;
+  window.isCaseUndated = isCaseUndated;
+  window.isCaseWaitingForInitialFiling = isCaseWaitingForInitialFiling;
+  window.getCaseStatusMeta = getCaseStatusMeta;
+  window.allCaseRecords = allCaseRecords;
+  window.allHearingRecords = allHearingRecords;
+}
+
+async function fetchAllDataFromSupabase() {
+  // ensureSupabaseClient is defined in services/supabaseClient.js and exposed on window
+  supabaseClient = (typeof window !== 'undefined' && window.ensureSupabaseClient)
+    ? window.ensureSupabaseClient()
+    : window.supabaseClient || null;
+  if (!supabaseClient && typeof window !== 'undefined') {
+    for (let i = 0; i < 20; i++) {
+      await new Promise(r => setTimeout(r, 100));
+      supabaseClient = window.ensureSupabaseClient ? window.ensureSupabaseClient() : window.supabaseClient || null;
+      if (supabaseClient) break;
+    }
+  }
+
+  if (!supabaseClient) {
+    console.log('Using local fallback data (Supabase not configured or CDN unreachable)');
+    if (typeof updateSupabaseStatusIndicator === 'function') updateSupabaseStatusIndicator(false);
+    if (typeof renderCourtOptions === 'function') renderCourtOptions();
+    if (typeof renderCriminalCourtOptions === 'function') renderCriminalCourtOptions();
+    if (typeof renderCourtsTable === 'function') renderCourtsTable();
+    if (typeof refreshAllCaseTables === 'function') refreshAllCaseTables();
+    return;
+  }
+
+  try {
+        const safeFetch = async (queryPromise, fallbackPromise = null) => {
+      try {
+        const res = await queryPromise;
+        if (res && res.error) {
+          console.warn('[safeFetch] Primary query error:', res.error);
+          if (fallbackPromise) {
+            const fallbackRes = await fallbackPromise;
+            if (fallbackRes && fallbackRes.error) {
+              console.warn('[safeFetch] Fallback query error:', fallbackRes.error);
+            }
+            return fallbackRes || { data: null, error: null };
+          }
+        }
+        return res || { data: null, error: null };
+      } catch (err) {
+        console.warn('Supabase query exception:', err);
+        if (fallbackPromise) {
+          try { 
+            const fRes = await fallbackPromise;
+            if(fRes && fRes.error) console.warn('[safeFetch] Fallback err:', fRes.error);
+            return fRes;
+          } catch (e) { console.warn('Fallback exception:', e); }
+        }
+        return { data: null, error: err };
+      }
+    };
+
+    // 1. Fetch from all_cases_unified_view (fast consolidated query) alongside shared metadata tables.
+    // If the unified view is not yet created in Supabase, safeFetch will return null and fall back gracefully.
+    const [unifiedRes, hearingsRes, courtsRes, todosRes, transfersRes, helpersRes] = await Promise.all([
+      safeFetch(supabaseClient.from('all_cases_unified_view').select('*').order('created_at', { ascending: false })),
+      safeFetch(supabaseClient.from('hearings').select('*').order('hearing_date', { ascending: false }), supabaseClient.from('hearings').select('*')),
+      safeFetch(supabaseClient.from('courts').select('*').order('court_name'), supabaseClient.from('courts').select('*')),
+      safeFetch(supabaseClient.from('case_todos').select('*').order('deadline_date', { ascending: true }), supabaseClient.from('case_todos').select('*')),
+      safeFetch(supabaseClient.from('case_transfers').select('*').order('transfer_date', { ascending: false }), supabaseClient.from('case_transfers').select('*')),
+      safeFetch(supabaseClient.from('court_helpers').select('*').order('created_at', { ascending: false }), supabaseClient.from('helpers').select('*'))
+    ]);
+
+    // 1. Sync Courts (Deduplicated & Enriched with Dual Names)
+    const deletedSet = getDeletedCourtsSet();
+    const seenCourtNames = new Set();
+    courts = [];
+    courtsList = [];
+    const auditedMaster = (typeof auditedCourtsData !== 'undefined' && Array.isArray(auditedCourtsData)) ? auditedCourtsData : [];
+
+    if (courtsRes && courtsRes.data && courtsRes.data.length > 0) {
+      // Sort if sort_order exists, otherwise alphabetical
+      const sortedCourts = [...courtsRes.data].sort((a, b) => {
+        if (a.sort_order != null && b.sort_order != null) return a.sort_order - b.sort_order;
+        return (a.court_name || '').localeCompare(b.court_name || '');
+      });
+
+      sortedCourts.forEach(c => {
+        const name = (c.court_name || '').trim();
+        const status = (c.status || 'ACTIVE').toUpperCase();
+        if (name && status !== 'DELETED' && !seenCourtNames.has(name.toLowerCase()) && !deletedSet.has(name.toLowerCase())) {
+          seenCourtNames.add(name.toLowerCase());
+          courts.push(name);
+          // Look up audited defaults to enrich if DB hasn't run migration yet
+          const auditedMatch = auditedMaster.find(ac => ac.court_name.toLowerCase() === name.toLowerCase());
+          courtsList.push({
+            id: c.id || (auditedMatch ? auditedMatch.id : null),
+            court_name: name,
+            short_code: c.short_code || (auditedMatch ? auditedMatch.short_code : ''),
+            civil_title: c.civil_title || (auditedMatch ? auditedMatch.civil_title : name),
+            criminal_title: c.criminal_title || (auditedMatch ? auditedMatch.criminal_title : name),
+            cadre: c.cadre || (auditedMatch ? auditedMatch.cadre : 'General'),
+            status: c.status || (auditedMatch ? auditedMatch.status : 'ACTIVE'),
+            remarks: c.remarks || (auditedMatch ? auditedMatch.remarks : ''),
+            sort_order: c.sort_order != null ? c.sort_order : 0
+          });
+        }
+      });
+      console.log(`Loaded ${courts.length} active courts (${courtsList.length} enriched) from Supabase.`);
+    }
+    window.courts = courts;
+    window.courtsList = courtsList;
+    if (typeof saveCourtsToBackup === 'function') saveCourtsToBackup();
+    renderCourtOptions();
+    renderCriminalCourtOptions();
+    renderCourtsTable();
+
+    // 2. Sync Cases
+    let loadedCases = [];
+
+    if (unifiedRes && unifiedRes.data && Array.isArray(unifiedRes.data) && unifiedRes.data.length > 0) {
+      // High-speed path: all cases retrieved in 1 single unified query
+      loadedCases = unifiedRes.data.map(r => normalizeCaseRecord(r, r.case_type || 'civil'));
+      console.log(`[FAST LOAD] Loaded ${loadedCases.length} cases via all_cases_unified_view.`);
+    } else {
+      // Graceful fallback: Fetch from individual case tables concurrently if unified view is not yet created
+      const [civilRes, stateRes, criminalRes, familyRes, revenueRes, miscCivilRes, miscCriminalRes, complaintRes] = await Promise.all([
+        safeFetch(supabaseClient.from('civilcases').select('*').order('created_at', { ascending: false }), supabaseClient.from('civilcases').select('*')),
+        safeFetch(supabaseClient.from('statecases').select('*').order('created_at', { ascending: false }), supabaseClient.from('statecases').select('*')),
+        safeFetch(supabaseClient.from('criminalcases').select('*').order('created_at', { ascending: false }), supabaseClient.from('criminalcases').select('*')),
+        safeFetch(supabaseClient.from('familycases').select('*').order('created_at', { ascending: false }), supabaseClient.from('familycases').select('*')),
+        safeFetch(supabaseClient.from('revenuecases').select('*').order('created_at', { ascending: false }), supabaseClient.from('revenuecases').select('*')),
+        safeFetch(supabaseClient.from('misccivilcases').select('*').order('created_at', { ascending: false }), supabaseClient.from('misccivilcases').select('*')),
+        safeFetch(supabaseClient.from('misccriminalcases').select('*').order('created_at', { ascending: false }), supabaseClient.from('misccriminalcases').select('*')),
+        safeFetch(supabaseClient.from('complaintcases').select('*').order('created_at', { ascending: false }), supabaseClient.from('complaintcases').select('*'))
+      ]);
+
+      if (civilRes.data && civilRes.data.length > 0) {
+        const normalizedCivil = civilRes.data.map(r => normalizeCaseRecord(r, r.case_type || 'civil'));
+        loadedCases = loadedCases.concat(normalizedCivil);
+      }
+
+      if (stateRes.data && stateRes.data.length > 0) {
+        const normalizedState = stateRes.data.map(r => normalizeCaseRecord(r, 'state'));
+        loadedCases = loadedCases.concat(normalizedState);
+      }
+
+      if (criminalRes.data && criminalRes.data.length > 0) {
+        const normalizedCriminal = criminalRes.data.map(r => normalizeCaseRecord(r, 'state'));
+        loadedCases = loadedCases.concat(normalizedCriminal);
+      }
+
+      if (familyRes.data && familyRes.data.length > 0) {
+        const normalizedFamily = familyRes.data.map(r => normalizeCaseRecord(r, 'family'));
+        loadedCases = loadedCases.concat(normalizedFamily);
+      }
+
+      if (revenueRes.data && revenueRes.data.length > 0) {
+        const normalizedRevenue = revenueRes.data.map(r => normalizeCaseRecord(r, 'revenue'));
+        loadedCases = loadedCases.concat(normalizedRevenue);
+      }
+
+      if (miscCivilRes.data && miscCivilRes.data.length > 0) {
+        const normalizedMiscCivil = miscCivilRes.data.map(r => normalizeCaseRecord(r, 'misc_civil'));
+        loadedCases = loadedCases.concat(normalizedMiscCivil);
+      }
+
+      if (miscCriminalRes.data && miscCriminalRes.data.length > 0) {
+        const normalizedMiscCriminal = miscCriminalRes.data.map(r => normalizeCaseRecord(r, 'misc_criminal'));
+        loadedCases = loadedCases.concat(normalizedMiscCriminal);
+      }
+
+      if (complaintRes && complaintRes.data && complaintRes.data.length > 0) {
+        const normalizedComplaint = complaintRes.data.map(r => normalizeCaseRecord(r, 'complaint'));
+        loadedCases = loadedCases.concat(normalizedComplaint);
+      }
+    }
+
+    // Deduplicate loaded cases safely: compound key (case_type + case_no) or id so Civil 40/2026 vs State 40/2026 are NEVER dropped!
+    const seenCaseKeys = new Set();
+    const uniqueLoadedCases = [];
+    for (const item of loadedCases) {
+      const cType = String(item.caseType || 'civil').toLowerCase();
+      const rawNum = String(item.caseNo || item.criminalCaseNumber || '').trim().toLowerCase();
+      const compoundKey = item.id ? `id_${item.id}` : `${cType}_${rawNum}`;
+      if (!rawNum && !item.id) {
+        uniqueLoadedCases.push(item);
+        continue;
+      }
+      if (!seenCaseKeys.has(compoundKey)) {
+        seenCaseKeys.add(compoundKey);
+        uniqueLoadedCases.push(item);
+      }
+    }
+    loadedCases = uniqueLoadedCases;
+
+    // 3. Attach latest hearing dates from hearings table if available & store all hearing history (Deduplicated)
+    if (hearingsRes.data && hearingsRes.data.length > 0) {
+      // Deduplicate hearings from Supabase on load to prevent duplicate rows in UI
+      const seenHearingKeys = new Set();
+      const dedupedHearings = [];
+      hearingsRes.data.forEach(h => {
+        const cNum = String(h.case_number || '').trim().toLowerCase();
+        const dStr = toISODate(h.hearing_date || h.next_hearing_date);
+        const key = `${cNum}_${dStr}`;
+        if (cNum && dStr) {
+          if (!seenHearingKeys.has(key)) {
+            seenHearingKeys.add(key);
+            dedupedHearings.push(h);
+          }
+        } else {
+          dedupedHearings.push(h);
+        }
+      });
+      allHearingRecords = dedupedHearings;
+
+      // Auto-heal orphaned "Cri-Rev-" hearing records by re-linking them to "Cr.Rev./129/2026"
+      const orphanedCriRevHearings = allHearingRecords.filter(h => (h.case_number || '').trim().toLowerCase() === 'cri-rev-');
+      if (orphanedCriRevHearings.length > 0) {
+        const targetCase = loadedCases.find(c => {
+          const num = (c.caseNo || c.criminalCaseNumber || '').toLowerCase();
+          return num === 'cr.rev./129/2026' || num.includes('129/2026');
+        });
+
+        if (targetCase) {
+          console.log('[AUTO-HEAL] Re-linking ' + orphanedCriRevHearings.length + ' orphaned "Cri-Rev-" hearings to case "' + targetCase.caseNo + '"...');
+          orphanedCriRevHearings.forEach(h => {
+            h.case_number = targetCase.caseNo;
+            h.case_type = 'misc_criminal';
+          });
+
+          // Heal database records in background
+          if (supabaseClient) {
+            supabaseClient.from('hearings')
+              .update({ case_number: targetCase.caseNo, case_type: 'misc_criminal' })
+              .eq('case_number', 'Cri-Rev-')
+              .then(() => console.log('[AUTO-HEAL] Supabase hearings table successfully updated.'))
+              .catch(err => console.warn('[AUTO-HEAL] Supabase hearings update notice:', err));
+
+            supabaseClient.from('misccriminalcases')
+              .update({ previous_hearing: '2026-09-03', next_hearing: '2026-09-29', hearing_process: 'Summon' })
+              .eq('case_number', targetCase.caseNo)
+              .then(() => console.log('[AUTO-HEAL] Supabase misccriminalcases table successfully updated.'))
+              .catch(err => console.warn('[AUTO-HEAL] Supabase misccriminalcases update notice:', err));
+          }
+        }
+      }
+
+      // Sort newest hearing date first so the latest scheduled hearing takes precedence
+      const sortedHearings = [...allHearingRecords].sort((a, b) => {
+        const da = new Date(a.hearing_date || a.created_at || 0);
+        const db = new Date(b.hearing_date || b.created_at || 0);
+        return db - da;
+      });
+
+      sortedHearings.forEach(h => {
+        const hNum = (h.case_number || '').trim().toLowerCase();
+        const hClean = hNum.replace(/[^a-z0-9]/g, '');
+        if (!hNum) return;
+
+        const matchingCase = loadedCases.find(c => {
+          const cNum = (c.caseNo || c.criminalCaseNumber || '').trim().toLowerCase();
+          if (cNum === hNum) return true;
+          if (hClean && cNum.replace(/[^a-z0-9]/g, '') === hClean) return true;
+          return false;
+        });
+
+        if (matchingCase) {
+          // If the case is already marked as Disposed, Decided, or Archived, do not let old hearing records revive next_hearing!
+          if (isCaseDisposed(matchingCase) || isCaseArchived(matchingCase)) return;
+
+          const nextHDate = toISODate(h.next_hearing_date);
+          const sessDate = toISODate(h.hearing_date);
+          const todayISO = toISODate(new Date());
+
+          if (sessDate && sessDate <= todayISO) {
+            if (!matchingCase.previousHearing || matchingCase.previousHearing === '—' || toISODate(matchingCase.previousHearing) < sessDate) {
+              matchingCase.previousHearing = sessDate;
+              if (h.process) matchingCase.previousProcess = h.process;
+            }
+          }
+
+          const hCandidate = nextHDate || (sessDate && sessDate >= todayISO ? sessDate : null);
+          if (hCandidate) {
+            const currentISO = toISODate(matchingCase.nextHearing);
+            const isMissing = !currentISO;
+            // Case row's next_hearing is today or in the past — a newer future hearing
+            // record means the case was forwarded, so the record should take over
+            const isStale = !!currentISO && currentISO <= todayISO;
+
+            if (isMissing || (isStale && hCandidate >= todayISO)) {
+              if (currentISO && currentISO !== hCandidate && (!matchingCase.previousHearing || matchingCase.previousHearing === '—')) {
+                matchingCase.previousHearing = currentISO;
+                matchingCase.previousProcess = matchingCase.hearingProcess || '—';
+              }
+              matchingCase.nextHearing = hCandidate;
+              matchingCase.hearingProcess = h.process || matchingCase.hearingProcess;
+            }
+          }
+        }
+      });
+    } else {
+      allHearingRecords = [];
+    }
+
+    // Auto-heal any decided/disposed/archived case records: ensure nextHearing is closed
+    loadedCases.forEach(c => {
+      if (isCaseArchived(c)) {
+        c.nextHearing = '—';
+        if (!c.hearingProcess || c.hearingProcess === '—') {
+          c.hearingProcess = getArchivedReasonMeta(c).label;
+        }
+      } else if (isCaseDisposed(c)) {
+        if (!c.disposalDate && c.nextHearing && c.nextHearing !== '—') {
+          c.disposalDate = toISODate(c.nextHearing) || c.nextHearing;
+        }
+        c.nextHearing = '—';
+        if (!c.hearingProcess || c.hearingProcess === '—') {
+          c.hearingProcess = c.caseStatus ? `Decided (${c.caseStatus})` : 'Disposed Off';
+        }
+      }
+    });
+
+    allCaseRecords = loadedCases;
+    console.log(`Loaded ${allCaseRecords.length} unique cases from Supabase.`);
+
+    // 4. Sync To-Do Tasks from case_todos (Deduplicated)
+    if (todosRes && todosRes.data && !todosRes.error) {
+      const seenTaskKeys = new Set();
+      const uniqueTasks = [];
+      todosRes.data.forEach(t => {
+        const key = t.id ? `id_${t.id}` : `${(t.case_number || '').toLowerCase()}_${(t.task_title || '').toLowerCase()}_${t.deadline_date}`;
+        if (!seenTaskKeys.has(key)) {
+          seenTaskKeys.add(key);
+          let parsedSteps = [];
+          if (Array.isArray(t.steps)) {
+            parsedSteps = t.steps;
+          } else if (typeof t.steps === 'string') {
+            try { parsedSteps = JSON.parse(t.steps); } catch (e) { parsedSteps = []; }
+          }
+          uniqueTasks.push({
+            id: t.id,
+            caseNo: t.case_number,
+            caseName: t.case_name || '—',
+            taskTitle: t.task_title,
+            hearingDate: t.hearing_date,
+            deadlineDate: t.deadline_date,
+            priority: t.priority || 'medium',
+            status: t.status || 'pending',
+            steps: parsedSteps,
+            copyNumber: t.copy_number || '',
+            createdAt: t.created_at
+          });
+        }
+      });
+      caseTasks = uniqueTasks;
+      window.caseTasks = caseTasks;
+      saveCaseTasksLocally();
+      updateTodoSyncIndicator(true);
+      console.log(`Loaded ${caseTasks.length} unique case tasks from Supabase.`);
+    } else {
+      updateTodoSyncIndicator(false);
+    }
+
+    // 5. Sync Case Transfers from case_transfers
+    if (transfersRes && transfersRes.data && !transfersRes.error) {
+      if (transfersRes.data.length > 0) {
+        allCaseTransfers = transfersRes.data;
+        window.allCaseTransfers = allCaseTransfers;
+        try {
+          localStorage.setItem('case_transfers_backup', JSON.stringify(allCaseTransfers));
+        } catch (e) {}
+        console.log(`Loaded ${allCaseTransfers.length} court transfers from Supabase.`);
+      } else {
+        try {
+          const localBackup = localStorage.getItem('case_transfers_backup');
+          const localTransfers = localBackup ? JSON.parse(localBackup) : [];
+          if (Array.isArray(localTransfers) && localTransfers.length > 0) {
+            allCaseTransfers = localTransfers;
+            window.allCaseTransfers = allCaseTransfers;
+            const payload = localTransfers.map(t => ({
+              case_number: t.case_number || t.caseNo || '',
+              case_type: t.case_type || t.caseType || 'civil',
+              case_title: t.case_title || t.caseName || '',
+              from_court: t.from_court || t.fromCourt || '',
+              to_court: t.to_court || t.toCourt || '',
+              transfer_date: t.transfer_date || t.transferDate || getTodayDateString(),
+              order_number: t.order_number || t.orderNo || '',
+              order_date: t.order_date || t.orderDate || null,
+              transferred_by: t.transferred_by || t.authority || '',
+              transfer_reason: t.transfer_reason || t.reason || '',
+              doc_link: t.doc_link || t.docLink || '',
+              remarks: t.remarks || ''
+            }));
+            supabaseClient.from('case_transfers').insert(payload).select().then(({ data, error }) => {
+              if (!error && Array.isArray(data) && data.length > 0) {
+                allCaseTransfers = data;
+                window.allCaseTransfers = allCaseTransfers;
+                try {
+                  localStorage.setItem('case_transfers_backup', JSON.stringify(allCaseTransfers));
+                } catch (e) {}
+                console.log(`Auto-seeded ${data.length} case transfers to Supabase.`);
+              }
+            }).catch(() => {});
+          }
+        } catch (e) {}
+      }
+    } else {
+      try {
+        const localBackup = localStorage.getItem('case_transfers_backup');
+        if (localBackup) {
+          allCaseTransfers = JSON.parse(localBackup);
+          window.allCaseTransfers = allCaseTransfers;
+        }
+      } catch (e) {}
+    }
+    if (typeof renderRecentTransfersTable === 'function') renderRecentTransfersTable();
+    if (typeof updateTransfersCountBadge === 'function') updateTransfersCountBadge();
+
+    // 6. Sync Court Helpers from court_helpers table
+    if (helpersRes && helpersRes.data && !helpersRes.error) {
+      const mappedHelpers = helpersRes.data.map(h => ({
+        id: String(h.id || ('helper_' + Date.now())),
+        name: h.name || '',
+        court: h.court || '',
+        position: h.position || '',
+        mobile: h.mobile || '',
+        createdAt: h.created_at || new Date().toISOString()
+      }));
+      courtHelpersList = mappedHelpers;
+      try {
+        localStorage.setItem(COURT_HELPERS_STORAGE_KEY, JSON.stringify(courtHelpersList));
+      } catch (e) {}
+      updateHelpersBadges();
+      if (typeof updateHelpersCloudSyncIndicator === 'function') updateHelpersCloudSyncIndicator(true);
+      if (typeof renderHelpersTable === 'function') renderHelpersTable();
+      console.log(`Loaded ${courtHelpersList.length} court staff members from Supabase.`);
+    } else {
+      if (typeof updateHelpersCloudSyncIndicator === 'function') updateHelpersCloudSyncIndicator(false);
+    }
+
+    // Ensure all courts mentioned in case records are merged into courts directory (skipping deleted courts)
+    if (Array.isArray(allCaseRecords)) {
+      const deletedSet = getDeletedCourtsSet();
+      const auditedMaster = (typeof auditedCourtsData !== 'undefined' && Array.isArray(auditedCourtsData)) ? auditedCourtsData : [];
+      let courtsUpdated = false;
+      allCaseRecords.forEach(item => {
+        const cName = (item.courtName || item.criminalCourtName || '').trim();
+        if (cName && cName !== '—' && !deletedSet.has(cName.toLowerCase()) && !courts.some(c => c.trim().toLowerCase() === cName.toLowerCase())) {
+          courts.push(cName);
+          const auditedMatch = auditedMaster.find(ac => ac.court_name.toLowerCase() === cName.toLowerCase());
+          courtsList.push(auditedMatch ? { ...auditedMatch } : {
+            court_name: cName,
+            short_code: cName.substring(0, 10),
+            civil_title: cName,
+            criminal_title: cName,
+            cadre: 'Other',
+            status: 'ACTIVE',
+            remarks: ''
+          });
+          courtsUpdated = true;
+        }
+      });
+      if (courtsUpdated) {
+        window.courts = courts;
+        window.courtsList = courtsList;
+        if (typeof saveCourtsToBackup === 'function') saveCourtsToBackup();
+        renderCourtOptions();
+        renderCriminalCourtOptions();
+        renderCourtsTable();
+      }
+    }
+
+    const hasCivilError = typeof civilRes !== 'undefined' && civilRes && civilRes.error;
+    if (hasCivilError) { alert('Supabase Error: ' + JSON.stringify(civilRes.error)); }
+    if (typeof updateSupabaseStatusIndicator === 'function') updateSupabaseStatusIndicator(!hasCivilError);
+    refreshAllCaseTables();
+    if (typeof syncAccountsWithSupabase === 'function') syncAccountsWithSupabase();
+    if (typeof fetchPaisaFromSupabase === 'function') fetchPaisaFromSupabase(false);
+  } catch (error) {
+    console.error('Supabase live fetch error:', error);
+    if (typeof updateSupabaseStatusIndicator === 'function') updateSupabaseStatusIndicator(false);
+    if (typeof saveCourtsToBackup === 'function') saveCourtsToBackup();
+    renderCourtOptions();
+    renderCriminalCourtOptions();
+    renderCourtsTable();
+    refreshAllCaseTables();
+  }
+}
+
+// ==============================================================================
+// Centralized Post-CRUD Auto-Refresh Pipeline
+// Automatically re-syncs database and refreshes all views after any CRUD action
+// ==============================================================================
+
+async function performPostCrudRefresh(options = {}) {
+  try {
+    // 1. Fetch fresh data from Supabase (or local fallback)
+    if (typeof fetchAllDataFromSupabase === 'function') {
+      await fetchAllDataFromSupabase();
+    }
+
+    // 2. Refresh all case tables, registers, dashboards, and schedules
+    if (typeof refreshAllCaseTables === 'function') {
+      refreshAllCaseTables();
+    }
+    if (typeof renderUndatedCasesTab === 'function') {
+      renderUndatedCasesTab();
+    }
+    if (typeof updateTopnavUndatedCount === 'function') {
+      updateTopnavUndatedCount();
+    }
+    if (typeof renderDisposedCasesTable === 'function') {
+      renderDisposedCasesTable();
+    }
+    if (typeof renderArchivedCasesTable === 'function') {
+      renderArchivedCasesTable();
+    }
+
+    // 3. If a specific case was currently open in Dossier, keep it updated
+    if (typeof currentSelectedCase !== 'undefined' && currentSelectedCase && typeof renderSelectedCaseDetails === 'function') {
+      const targetNo = (options.caseNumber || currentSelectedCase.caseNo || currentSelectedCase.criminalCaseNumber || '').trim().toLowerCase();
+      if (targetNo) {
+        const refreshedCase = allCaseRecords.find(c =>
+          (c.caseNo || '').trim().toLowerCase() === targetNo ||
+          (c.criminalCaseNumber || '').trim().toLowerCase() === targetNo
+        );
+        if (refreshedCase) {
+          currentSelectedCase = refreshedCase;
+          renderSelectedCaseDetails(refreshedCase);
+        }
+      }
+    }
+
+    // 4. If in Tasks/Todo tab, ensure tasks list is re-rendered
+    if (typeof renderCaseTasks === 'function') {
+      const activeFilter = typeof currentTodoFilter !== 'undefined' ? currentTodoFilter : 'all';
+      renderCaseTasks(activeFilter);
+    }
+
+    // 5. If in Courts tab, ensure courts table is re-rendered
+    if (typeof renderCourtsTable === 'function') {
+      renderCourtsTable();
+    }
+
+    // 6. If in Court Helpers tab, ensure helpers table is re-rendered
+    if (typeof renderHelpersTable === 'function') {
+      renderHelpersTable();
+    }
+
+    // 7. If in Transfers tab, ensure recent transfers table is re-rendered
+    if (typeof renderRecentTransfersTable === 'function') {
+      renderRecentTransfersTable();
+    }
+
+    // 8. Optional toast notification
+    if (options.toast) {
+      if (typeof showToast === 'function') {
+        showToast(options.toast, 'success');
+      } else if (typeof showToastNotification === 'function') {
+        showToastNotification(options.toast, 'success');
+      } else if (typeof showCaseBookToast === 'function') {
+        showCaseBookToast(options.toast);
+      }
+    }
+  } catch (err) {
+    console.warn('Post-CRUD auto-refresh notice:', err);
+    if (typeof refreshAllCaseTables === 'function') {
+      refreshAllCaseTables();
+    }
+    if (typeof renderUndatedCasesTab === 'function') {
+      renderUndatedCasesTab();
+    }
+    if (typeof updateTopnavUndatedCount === 'function') {
+      updateTopnavUndatedCount();
+    }
+    if (typeof renderDisposedCasesTable === 'function') {
+      renderDisposedCasesTable();
+    }
+    if (typeof renderArchivedCasesTable === 'function') {
+      renderArchivedCasesTable();
+    }
+  }
+}
+if (typeof performPostCrudRefresh !== 'undefined') window.performPostCrudRefresh = performPostCrudRefresh;
+
+// ==============================================================================
+// Automatic Uppercase Conversion for Case Number Inputs
+// ==============================================================================
+
+var CASE_NUMBER_INPUT_IDS = new Set([
+  'caseno',
+  'statecasenumber',
+  'criminalcasenumber',
+  'familycasenumber',
+  'revenuecasenumber',
+  'misccivilcasenumber',
+  'miscciviloriginalcase',
+  'misccriminalcasenumber',
+  'misccriminaloriginalcase',
+  'complaintcasenumber',
+  'updatecaseno',
+  'updatestatecasenumber',
+  'updatecriminalcasenumber',
+  'updatefamilycasenumber',
+  'updaterevenuecasenumber',
+  'updatemisccivilcasenumber',
+  'updatemiscciviloriginalcase',
+  'updatemisccriminalcasenumber',
+  'updatemisccriminaloriginalcase',
+  'updatecomplaintcasenumber',
+  'hearingcaseno',
+  'dbmodnewcaseno',
+  'statecrimenumber',
+  'updatestatecrimenumber'
+]);
+
+function isCaseNumberInputElement(el) {
+  if (!el || el.tagName !== 'INPUT') return false;
+  const type = (el.type || 'text').toLowerCase();
+  if (type !== 'text' && type !== 'search') return false;
+
+  const idLower = (el.id || '').trim().toLowerCase();
+  if (CASE_NUMBER_INPUT_IDS.has(idLower)) return true;
+
+  if (el.classList && (el.classList.contains('case-number-input') || el.classList.contains('uppercase-input'))) {
+    return true;
+  }
+
+  if (el.getAttribute('data-uppercase') === 'true') {
+    return true;
+  }
+
+  // Check name or placeholder pattern, excluding generic search inputs
+  if (!idLower.includes('search') && !idLower.includes('filter')) {
+    if (idLower.includes('caseno') || idLower.includes('casenumber') || idLower.includes('case_number') || idLower.includes('crimenumber') || idLower.includes('originalcase')) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function convertInputToUppercase(inputEl) {
+  if (!inputEl || !isCaseNumberInputElement(inputEl)) return;
+  const val = inputEl.value;
+  if (!val) return;
+  const upper = val.toUpperCase();
+  if (val !== upper) {
+    const start = inputEl.selectionStart;
+    const end = inputEl.selectionEnd;
+    inputEl.value = upper;
+    if (start !== null && end !== null && typeof inputEl.setSelectionRange === 'function') {
+      try {
+        inputEl.setSelectionRange(start, end);
+      } catch (e) {}
+    }
+  }
+}
+
+// Global delegated event listeners for real-time uppercase conversion
+document.addEventListener('input', (e) => convertInputToUppercase(e.target), true);
+document.addEventListener('change', (e) => convertInputToUppercase(e.target), true);
+document.addEventListener('blur', (e) => convertInputToUppercase(e.target), true);
+document.addEventListener('paste', (e) => {
+  setTimeout(() => convertInputToUppercase(e.target), 0);
+}, true);
+
+if (typeof isCaseNumberInputElement !== 'undefined') window.isCaseNumberInputElement = isCaseNumberInputElement;
+if (typeof convertInputToUppercase !== 'undefined') window.convertInputToUppercase = convertInputToUppercase;
+
+// ==============================================================================
+// Centralized Database Duplicate Prevention Suite
+// ==============================================================================
+
+async function checkCaseNumberExists(rawCaseNo, excludeCaseNo = null, rawYear = null) {
+  if (!rawCaseNo) return { exists: false };
+  const cleanNo = String(rawCaseNo).trim().replace(/\s+/g, ' ');
+  if (!cleanNo) return { exists: false };
+
+  const canonicalNo =
+    typeof window !== 'undefined' && typeof window.formatCanonicalCaseNumber === 'function' && rawYear
+      ? window.formatCanonicalCaseNumber(cleanNo, rawYear)
+      : cleanNo;
+
+  const records = (typeof window !== 'undefined' && Array.isArray(window.allCaseRecords)) ? window.allCaseRecords : allCaseRecords;
+  const client = (typeof window !== 'undefined' && window.supabaseClient) ? window.supabaseClient : supabaseClient;
+
+  const cleanLower = cleanNo.toLowerCase();
+  const canonicalLower = canonicalNo.toLowerCase();
+  const excludeLower = excludeCaseNo ? String(excludeCaseNo).trim().toLowerCase() : null;
+
+  // 1. Check local in-memory records first (instant feedback)
+  if (Array.isArray(records)) {
+    const localMatch = records.find(c => {
+      const cNo1 = (c.caseNo || '').trim().toLowerCase();
+      const cNo2 = (c.criminalCaseNumber || '').trim().toLowerCase();
+      const cYear = c.caseYear || c.crimeYear || c.case_year || '';
+      const cCanon =
+        typeof window !== 'undefined' && typeof window.buildCanonicalCaseKey === 'function'
+          ? window.buildCanonicalCaseKey(c.caseNo || c.criminalCaseNumber || '', cYear)
+          : cNo1;
+      if (excludeLower && (cNo1 === excludeLower || cNo2 === excludeLower)) {
+        return false;
+      }
+      return (
+        cNo1 === cleanLower ||
+        cNo2 === cleanLower ||
+        cNo1 === canonicalLower ||
+        cNo2 === canonicalLower ||
+        (canonicalLower && cCanon === canonicalLower)
+      );
+    });
+
+    if (localMatch) {
+      return {
+        exists: true,
+        source: 'local',
+        caseNumber: localMatch.caseNo || localMatch.criminalCaseNumber,
+        caseName: localMatch.caseName || 'Existing Case',
+        caseType: localMatch.caseType || 'civil'
+      };
+    }
+  }
+
+  // 2. Query live Supabase database across all case tables
+  if (client) {
+    try {
+      const tablesToCheck = [
+        'civilcases',
+        'statecases',
+        'criminalcases',
+        'familycases',
+        'revenuecases',
+        'misccivilcases',
+        'misccriminalcases',
+        'complaintcases'
+      ];
+
+      const queries = tablesToCheck.map(tbl =>
+        client
+          .from(tbl)
+          .select('id, case_number, case_name')
+          .ilike('case_number', cleanNo)
+          .limit(2)
+      );
+
+      const results = await Promise.all(queries);
+
+      for (let i = 0; i < tablesToCheck.length; i++) {
+        const { data, error } = results[i];
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const match = data.find(row => {
+            const rowNo = (row.case_number || '').trim().toLowerCase();
+            if (excludeLower && rowNo === excludeLower) return false;
+            return rowNo === cleanLower;
+          });
+          if (match) {
+            return {
+              exists: true,
+              source: 'database',
+              table: tablesToCheck[i],
+              caseNumber: match.case_number,
+              caseName: match.case_name || 'Existing Case'
+            };
+          }
+        }
+      }
+    } catch (supaErr) {
+      console.warn('Supabase duplicate check query error:', supaErr);
+    }
+  }
+
+  return { exists: false };
+}
+if (typeof checkCaseNumberExists !== 'undefined') window.checkCaseNumberExists = checkCaseNumberExists;
+
+function clearCaseNumberValidationBadges() {
+  document.querySelectorAll('.case-dup-warning, .case-dup-ok').forEach(el => el.remove());
+  document.querySelectorAll('.input-dup-error').forEach(el => el.classList.remove('input-dup-error'));
+}
+if (typeof clearCaseNumberValidationBadges !== 'undefined') window.clearCaseNumberValidationBadges = clearCaseNumberValidationBadges;
+
+function attachCaseNumberDuplicateListeners() {
+  const caseNumberInputIds = [
+    'caseNo',
+    'stateCaseNumber',
+    'familyCaseNumber',
+    'revenueCaseNumber',
+    'miscCivilCaseNumber',
+    'miscCriminalCaseNumber',
+    'complaintCaseNumber'
+  ];
+
+  let debounceTimer = null;
+
+  caseNumberInputIds.forEach(id => {
+    const input = document.getElementById(id);
+    if (!input) return;
+
+    const validateInput = async () => {
+      const val = input.value.trim();
+      const parent = input.parentElement;
+      if (!parent) return;
+      parent.querySelectorAll('.case-dup-warning, .case-dup-ok').forEach(el => el.remove());
+      input.classList.remove('input-dup-error');
+
+      if (!val) return;
+
+      const dup = await checkCaseNumberExists(val);
+      if (dup.exists) {
+        input.classList.add('input-dup-error');
+        const badge = document.createElement('div');
+        badge.className = 'case-dup-warning';
+        badge.innerHTML = `<iconify-icon icon="lucide:alert-triangle"></iconify-icon> <span><strong>Duplicate Warning:</strong> Case Number "${val}" is already registered in ${dup.source === 'database' ? 'table ' + dup.table : 'records'}!</span>`;
+        parent.appendChild(badge);
+      } else {
+        const badge = document.createElement('div');
+        badge.className = 'case-dup-ok';
+        badge.innerHTML = `<iconify-icon icon="lucide:check-circle-2"></iconify-icon> <span>Case Number is unique & available.</span>`;
+        parent.appendChild(badge);
+      }
+    };
+
+    input.addEventListener('blur', validateInput);
+    input.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(validateInput, 400);
+    });
+  });
+}
+if (typeof attachCaseNumberDuplicateListeners !== 'undefined') window.attachCaseNumberDuplicateListeners = attachCaseNumberDuplicateListeners;
+
+// Add Case to Supabase (or local fallback) with Strict Duplicate Prevention
+async function addCaseToSupabase(newCase) {
+  let dbInsertFailed = false;
+
+  // Clean and normalize case number + year canonically (e.g. "1075" + "2016" -> "1075/2016")
+  let rawNo = (newCase.caseNo || '').trim().replace(/\s+/g, ' ');
+  let rawYear = String(newCase.caseYear || newCase.crimeYear || '').trim();
+  if (typeof window !== 'undefined' && typeof window.parseCaseNumberAndYear === 'function') {
+    const parsed = window.parseCaseNumberAndYear(rawNo, rawYear);
+    rawNo = parsed.formattedCaseNumber || rawNo;
+    if (!rawYear && parsed.year) rawYear = parsed.year;
+  } else if (rawNo && /^\d{4}$/.test(rawYear) && !rawNo.includes(rawYear)) {
+    rawNo = `${rawNo}/${rawYear}`;
+  }
+  const cleanCaseNo = rawNo.toUpperCase();
+  newCase.caseNo = cleanCaseNo;
+  if (rawYear) newCase.caseYear = rawYear;
+  if (newCase.criminalCaseNumber) newCase.criminalCaseNumber = cleanCaseNo;
+  if (newCase.originalCaseNumber) newCase.originalCaseNumber = (newCase.originalCaseNumber || '').trim().toUpperCase();
+  if (newCase.originalCase) newCase.originalCase = (newCase.originalCase || '').trim().toUpperCase();
+  if (newCase.crimeNumber) newCase.crimeNumber = (newCase.crimeNumber || '').trim().toUpperCase();
+
+  // Pre-check database for duplicate before attempting insert
+  if (cleanCaseNo) {
+    const dupCheck = await checkCaseNumberExists(cleanCaseNo, null, newCase.caseYear);
+    if (dupCheck && dupCheck.exists) {
+      console.warn(`[Duplicate Blocked] Case ${cleanCaseNo} already exists in ${dupCheck.source} (${dupCheck.table || 'records'}).`);
+      alert(`❌ Duplicate Entry Blocked!\n\nCase Number "${cleanCaseNo}" is already registered in the database (${dupCheck.source === 'database' ? 'Table: ' + dupCheck.table : 'Case Register'}).\n\nRepeated entry is blocked to preserve database integrity.`);
+      return { success: false, duplicate: true };
+    }
+  }
+
+  if (supabaseClient) {
+    try {
+      if (newCase.caseType === 'state' || newCase.caseType === 'criminal') {
+        const payload = {
+          case_number: newCase.caseNo,
+          crime_year: parseInt(newCase.caseYear, 10) || 2026,
+          case_type: 'state',
+          case_name: newCase.caseName,
+          police_station: newCase.policeStation,
+          crime_section: newCase.crimeSection,
+          crime_number: newCase.crimeNumber,
+          filing_date: newCase.filingDate || new Date().toISOString().split('T')[0],
+          first_party: newCase.firstParty || 'State of U.P.',
+          accused_name: newCase.accusedName,
+          court_name: newCase.courtName,
+          client_name: newCase.clientName,
+          client_number: newCase.clientNumber,
+          next_hearing: null,
+          case_status: newCase.caseStatus || 'Pending',
+          remark: newCase.remark || ''
+        };
+        let insertObj = { ...payload, doc_link: newCase.docLink || '' };
+        // Try statecases table first
+        let { error } = await supabaseClient.from('statecases').insert([insertObj]);
+        if (error && (error.code === '42P01' || error.message?.includes('does not exist') || error.code === 'PGRST204')) {
+          // Fallback to legacy criminalcases table
+          const crimPayload = {
+            case_number: newCase.caseNo,
+            crime_year: parseInt(newCase.caseYear, 10) || 2026,
+            case_type: 'criminal',
+            case_name: newCase.caseName,
+            police_station: newCase.policeStation,
+            crime_section: newCase.crimeSection,
+            crime_number: newCase.crimeNumber,
+            filing_date: newCase.filingDate,
+            victim_name: newCase.firstParty || 'State of U.P.',
+            accused_name: newCase.accusedName,
+            court_name: newCase.courtName,
+            client_name: newCase.clientName,
+            client_number: newCase.clientNumber,
+            next_hearing: null,
+            case_status: newCase.caseStatus || 'Pending',
+            remark: newCase.remark || ''
+          };
+          const crimRes = await supabaseClient.from('criminalcases').insert([crimPayload]);
+          error = crimRes.error;
+        }
+        if (error) {
+          console.error('Supabase add state case error:', error);
+          if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('unique')) {
+            alert(`❌ Case Number "${newCase.caseNo}" already exists in the database! Cannot add duplicate.`);
+          } else {
+            alert(`⚠️ Failed to add case to database: ${error.message || 'Unknown error'}`);
+          }
+          dbInsertFailed = true;
+        }
+      } else if (newCase.caseType === 'family') {
+        const payload = {
+          case_number: newCase.caseNo,
+          case_year: parseInt(newCase.caseYear, 10) || 2026,
+          case_type: 'family',
+          case_name: newCase.caseName,
+          matter_type: newCase.matterType,
+          petitioner: newCase.petitioner,
+          respondent: newCase.respondent,
+          marriage_date: newCase.marriageDate || null,
+          maintenance_detail: newCase.maintenanceDetail || '',
+          filing_date: newCase.filingDate || new Date().toISOString().split('T')[0],
+          court_name: newCase.courtName,
+          client_name: newCase.clientName,
+          client_number: newCase.clientNumber,
+          next_hearing: null,
+          case_status: newCase.caseStatus || 'Pending',
+          remark: newCase.remark || ''
+        };
+        let insertObj = { ...payload, doc_link: newCase.docLink || '' };
+        let { error } = await supabaseClient.from('familycases').insert([insertObj]);
+        if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+          // Fallback to civilcases
+          const civRes = await supabaseClient.from('civilcases').insert([{
+            case_number: newCase.caseNo,
+            case_year: parseInt(newCase.caseYear, 10) || 2026,
+            case_type: 'family',
+            case_name: newCase.caseName,
+            filing_date: newCase.filingDate,
+            plaintiff: newCase.petitioner,
+            defendant: newCase.respondent,
+            court_name: newCase.courtName,
+            client_name: newCase.clientName,
+            client_number: newCase.clientNumber,
+            remark: `[${newCase.matterType}] ${newCase.remark || ''}`
+          }]);
+          error = civRes.error;
+        }
+        if (error) {
+          console.error('Supabase add family case error:', error);
+          if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('unique')) {
+            alert(`❌ Case Number "${newCase.caseNo}" already exists in the database! Cannot add duplicate.`);
+          } else {
+            alert(`⚠️ Failed to add case to database: ${error.message || 'Unknown error'}`);
+          }
+          dbInsertFailed = true;
+        }
+      } else if (newCase.caseType === 'revenue') {
+        const payload = {
+          case_number: newCase.caseNo,
+          case_year: parseInt(newCase.caseYear, 10) || 2026,
+          case_type: 'revenue',
+          case_name: newCase.caseName,
+          revenue_act_section: newCase.revenueActSection || newCase.actSection || 'Sec 34 (Mutation / à¤¦à¤¾à¤–à¤¿à¤² खारिज)',
+          village_mauja: newCase.villageMauja || newCase.village || '',
+          pargana_tehsil: newCase.parganaTehsil || newCase.tehsil || '',
+          gata_khata_no: newCase.gataKhataNo || newCase.gataNo || '',
+          filing_date: newCase.filingDate || new Date().toISOString().split('T')[0],
+          applicant: newCase.applicant,
+          opposite_party: newCase.oppositeParty,
+          court_name: newCase.courtName,
+          client_name: newCase.clientName,
+          client_number: newCase.clientNumber,
+          next_hearing: null,
+          case_status: newCase.caseStatus || 'Pending',
+          remark: newCase.remark || ''
+        };
+        let insertObj = { ...payload, doc_link: newCase.docLink || '' };
+        let { error } = await supabaseClient.from('revenuecases').insert([insertObj]);
+        if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+          // Fallback to civilcases
+          const civRes = await supabaseClient.from('civilcases').insert([{
+            case_number: newCase.caseNo,
+            case_year: parseInt(newCase.caseYear, 10) || 2026,
+            case_type: 'revenue',
+            case_name: newCase.caseName,
+            filing_date: newCase.filingDate,
+            plaintiff: newCase.applicant,
+            defendant: newCase.oppositeParty,
+            court_name: newCase.courtName,
+            client_name: newCase.clientName,
+            client_number: newCase.clientNumber,
+            remark: `[${newCase.revenueActSection} - ${newCase.villageMauja}] ${newCase.remark || ''}`
+          }]);
+          error = civRes.error;
+        }
+        if (error) {
+          console.error('Supabase add revenue case error:', error);
+          if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('unique')) {
+            alert(`❌ Case Number "${newCase.caseNo}" already exists in the database! Cannot add duplicate.`);
+          } else {
+            alert(`⚠️ Failed to add case to database: ${error.message || 'Unknown error'}`);
+          }
+          dbInsertFailed = true;
+        }
+      } else if (newCase.caseType === 'misc_civil') {
+        const payload = {
+          case_number: newCase.caseNo,
+          case_year: parseInt(newCase.caseYear, 10) || 2026,
+          case_type: 'misc_civil',
+          case_name: newCase.caseName,
+          original_case_number: newCase.originalCaseNumber || '',
+          proceeding_type: newCase.proceedingType || 'Misc Application',
+          filing_date: newCase.filingDate || new Date().toISOString().split('T')[0],
+          applicant: newCase.applicant,
+          opposite_party: newCase.oppositeParty,
+          court_name: newCase.courtName,
+          client_name: newCase.clientName,
+          client_number: newCase.clientNumber,
+          next_hearing: null,
+          case_status: newCase.caseStatus || 'Pending',
+          remark: newCase.remark || ''
+        };
+        let insertObj = { ...payload, doc_link: newCase.docLink || '' };
+        let { error } = await supabaseClient.from('misccivilcases').insert([insertObj]);
+        if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+          // Fallback to civilcases
+          const civRes = await supabaseClient.from('civilcases').insert([{
+            case_number: newCase.caseNo,
+            case_year: parseInt(newCase.caseYear, 10) || 2026,
+            case_type: 'misc_civil',
+            case_name: newCase.caseName,
+            filing_date: newCase.filingDate,
+            plaintiff: newCase.applicant,
+            defendant: newCase.oppositeParty,
+            court_name: newCase.courtName,
+            client_name: newCase.clientName,
+            client_number: newCase.clientNumber,
+            remark: `[${newCase.proceedingType}] ${newCase.remark || ''}`
+          }]);
+          error = civRes.error;
+        }
+        if (error) {
+          console.error('Supabase add misc civil case error:', error);
+          if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('unique')) {
+            alert(`❌ Case Number "${newCase.caseNo}" already exists in the database! Cannot add duplicate.`);
+          } else {
+            alert(`⚠️ Failed to add case to database: ${error.message || 'Unknown error'}`);
+          }
+          dbInsertFailed = true;
+        }
+      } else if (newCase.caseType === 'misc_criminal') {
+        const payload = {
+          case_number: newCase.caseNo,
+          crime_year: parseInt(newCase.caseYear, 10) || 2026,
+          case_type: 'misc_criminal',
+          case_name: newCase.caseName,
+          original_case_number: newCase.originalCaseNumber || '',
+          proceeding_type: newCase.proceedingType || 'Bail Application (Sec 439 CrPC)',
+          police_station: newCase.policeStation || '',
+          crime_section: newCase.crimeSection || '',
+          filing_date: newCase.filingDate || new Date().toISOString().split('T')[0],
+          applicant: newCase.applicant,
+          opposite_party: newCase.oppositeParty || 'State of U.P.',
+          court_name: newCase.courtName,
+          client_name: newCase.clientName,
+          client_number: newCase.clientNumber,
+          next_hearing: null,
+          case_status: newCase.caseStatus || 'Pending',
+          remark: newCase.remark || ''
+        };
+        let insertObj = { ...payload, doc_link: newCase.docLink || '' };
+        let { error } = await supabaseClient.from('misccriminalcases').insert([insertObj]);
+        if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+          // Fallback to criminalcases
+          const crimRes = await supabaseClient.from('criminalcases').insert([{
+            case_number: newCase.caseNo,
+            crime_year: parseInt(newCase.caseYear, 10) || 2026,
+            case_type: 'misc_criminal',
+            case_name: newCase.caseName,
+            police_station: newCase.policeStation || 'Police Station',
+            crime_section: newCase.crimeSection || 'IPC',
+            crime_number: newCase.originalCaseNumber || newCase.caseNo,
+            filing_date: newCase.filingDate,
+            victim_name: newCase.oppositeParty || 'State of U.P.',
+            accused_name: newCase.applicant,
+            court_name: newCase.courtName,
+            client_name: newCase.clientName,
+            client_number: newCase.clientNumber,
+            next_hearing: null,
+            case_status: newCase.caseStatus || 'Pending',
+            remark: `[${newCase.proceedingType}] ${newCase.remark || ''}`
+          }]);
+          error = crimRes.error;
+        }
+        if (error) {
+          console.error('Supabase add misc criminal case error:', error);
+          if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('unique')) {
+            alert(`❌ Case Number "${newCase.caseNo}" already exists in the database! Cannot add duplicate.`);
+          } else {
+            alert(`⚠️ Failed to add case to database: ${error.message || 'Unknown error'}`);
+          }
+          dbInsertFailed = true;
+        }
+      } else if (newCase.caseType === 'complaint') {
+        const payload = {
+          case_number: newCase.caseNo,
+          case_year: parseInt(newCase.caseYear, 10) || 2026,
+          case_type: 'complaint',
+          complaint_type: newCase.complaintType || 'Cheque Bounce (Sec 138 NI Act)',
+          complainant: newCase.complainant || newCase.plaintiff || 'Complainant',
+          accused_name: newCase.accusedName || newCase.defendant || 'Accused',
+          section_act: newCase.sectionAct || '',
+          police_station: newCase.policeStation || '',
+          case_name: newCase.caseName,
+          court_name: newCase.courtName,
+          filing_date: newCase.filingDate || new Date().toISOString().split('T')[0],
+          client_name: newCase.clientName,
+          client_number: newCase.clientNumber,
+          next_hearing: null,
+          case_status: newCase.caseStatus || 'Pending',
+          remark: newCase.remark || ''
+        };
+        let insertObj = { ...payload, doc_link: newCase.docLink || '' };
+        let { error } = await supabaseClient.from('complaintcases').insert([insertObj]);
+        if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+          // Fallback to criminalcases
+          const crimRes = await supabaseClient.from('criminalcases').insert([{
+            case_number: newCase.caseNo,
+            crime_year: parseInt(newCase.caseYear, 10) || 2026,
+            case_type: 'complaint',
+            case_name: newCase.caseName,
+            police_station: newCase.policeStation || 'Complaint',
+            crime_section: newCase.sectionAct || 'Sec 138 NI Act',
+            crime_number: newCase.caseNo,
+            filing_date: newCase.filingDate,
+            victim_name: newCase.complainant,
+            accused_name: newCase.accusedName,
+            court_name: newCase.courtName,
+            client_name: newCase.clientName,
+            client_number: newCase.clientNumber,
+            next_hearing: null,
+            case_status: newCase.caseStatus || 'Pending',
+            remark: `[${newCase.complaintType}] ${newCase.remark || ''}`
+          }]);
+          error = crimRes.error;
+        }
+        if (error) {
+          console.error('Supabase add complaint case error:', error);
+          if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('unique')) {
+            alert(`❌ Case Number "${newCase.caseNo}" already exists in the database! Cannot add duplicate.`);
+          } else {
+            alert(`⚠️ Failed to add case to database: ${error.message || 'Unknown error'}`);
+          }
+          dbInsertFailed = true;
+        }
+      } else {
+        const payload = {
+          case_number: newCase.caseNo,
+          case_year: parseInt(newCase.caseYear, 10) || 2026,
+          case_type: newCase.caseType || 'civil',
+          case_name: newCase.caseName,
+          filing_date: newCase.filingDate || new Date().toISOString().split('T')[0],
+          plaintiff: newCase.plaintiff,
+          defendant: newCase.defendant,
+          court_name: newCase.courtName,
+          client_name: newCase.clientName,
+          client_number: newCase.clientNumber,
+          next_hearing: null,
+          case_status: newCase.caseStatus || 'Pending',
+          remark: newCase.remark || ''
+        };
+        let insertObj = { ...payload, doc_link: newCase.docLink || '' };
+        let { error } = await supabaseClient.from('civilcases').insert([insertObj]);
+        // Fallback: retry without optional columns if column doesn't exist in older Supabase schema
+        if (error && (error.message?.includes('doc_link') || error.message?.includes('remark') || error.code === 'PGRST204')) {
+          delete insertObj.doc_link;
+          let retry1 = await supabaseClient.from('civilcases').insert([insertObj]);
+          if (!retry1.error) {
+            error = null;
+          } else if (retry1.error.message?.includes('remark') || retry1.error.code === 'PGRST204') {
+            delete insertObj.remark;
+            let retry2 = await supabaseClient.from('civilcases').insert([insertObj]);
+            error = retry2.error;
+          } else {
+            error = retry1.error;
+          }
+        }
+        // Check for unique constraint violation (duplicate case number)
+        if (error) {
+          console.error('Supabase add civil case error:', error);
+          if (error.code === '23505' || error.message?.includes('duplicate') || error.message?.includes('unique')) {
+            alert(`❌ Case Number "${newCase.caseNo}" already exists in the database! Cannot add duplicate.`);
+          } else {
+            alert(`⚠️ Failed to add case to database: ${error.message || 'Unknown error'}`);
+          }
+          dbInsertFailed = true;
+        }
+      }
+    } catch (e) {
+      console.error('Supabase add error:', e);
+      dbInsertFailed = true;
+    }
+  }
+
+  // Only add to in-memory records if DB insert succeeded (or DB not available) AND not already in records
+  if (!dbInsertFailed) {
+    const alreadyLocal = allCaseRecords.some(c =>
+      (c.caseNo || '').trim().toLowerCase() === cleanCaseNo.toLowerCase() ||
+      (c.criminalCaseNumber || '').trim().toLowerCase() === cleanCaseNo.toLowerCase()
+    );
+    if (!alreadyLocal) {
+      allCaseRecords.unshift(newCase);
+    }
+    await performPostCrudRefresh({ caseNumber: cleanCaseNo });
+    return { success: true };
+  }
+  return { success: false, error: 'Database insert failed' };
+}
+
+// Update Case in Supabase (or local fallback)
+async function updateCaseInSupabase(originalCaseNumber, newCaseNumberOrType, caseTypeOrTarget, maybeTarget) {
+  let originalNo = originalCaseNumber;
+  let newCaseNumber = originalCaseNumber;
+  let caseType = 'civil';
+  let targetCase = null;
+
+  if (typeof maybeTarget === 'object' && maybeTarget !== null) {
+    newCaseNumber = newCaseNumberOrType;
+    caseType = caseTypeOrTarget;
+    targetCase = maybeTarget;
+  } else {
+    caseType = newCaseNumberOrType;
+    targetCase = caseTypeOrTarget;
+    newCaseNumber = targetCase?.caseNo || targetCase?.criminalCaseNumber || originalCaseNumber;
+  }
+
+  newCaseNumber = String(newCaseNumber || '').trim().toUpperCase();
+  if (targetCase) {
+    targetCase.caseNo = newCaseNumber;
+    if (targetCase.criminalCaseNumber) targetCase.criminalCaseNumber = newCaseNumber;
+    if (targetCase.originalCaseNumber) targetCase.originalCaseNumber = String(targetCase.originalCaseNumber || '').trim().toUpperCase();
+    if (targetCase.originalCase) targetCase.originalCase = String(targetCase.originalCase || '').trim().toUpperCase();
+  }
+
+  if (supabaseClient) {
+    try {
+      const isDisposedCase = isCaseDisposed(targetCase);
+      const isArchivedCase = isCaseArchived(targetCase);
+      const resolvedNextHearing = (isDisposedCase || isArchivedCase) ? null : ((targetCase.nextHearing && targetCase.nextHearing !== '—') ? targetCase.nextHearing : null);
+      const resolvedDisposalDate = targetCase.disposalDate || targetCase.disposal_date || (isDisposedCase ? getTodayDateString() : null);
+
+      const safeTableUpdate = async (tableName, payload, caseNumber) => {
+        let res = await supabaseClient.from(tableName).update(payload).eq('case_number', caseNumber).select('id');
+        if (res.error && (res.error.message || '').toLowerCase().includes('disposal_comment')) {
+          const fallback = { ...payload };
+          delete fallback.disposal_comment;
+          res = await supabaseClient.from(tableName).update(fallback).eq('case_number', caseNumber).select('id');
+        }
+        if (res.error && (res.error.message || '').toLowerCase().includes('disposal_date')) {
+          const fallback = { ...payload };
+          delete fallback.disposal_date;
+          res = await supabaseClient.from(tableName).update(fallback).eq('case_number', caseNumber).select('id');
+        }
+        return res;
+      };
+
+      if (caseType === 'state' || caseType === 'criminal') {
+        const basePayload = {
+          case_number: newCaseNumber,
+          crime_year: parseInt(targetCase.caseYear || targetCase.crimeYear, 10) || 2026,
+          police_station: targetCase.policeStation,
+          crime_section: targetCase.crimeSection,
+          crime_number: targetCase.crimeNumber,
+          filing_date: targetCase.crimeFilingDate || targetCase.filingDate || null,
+          first_party: targetCase.firstParty || 'State of U.P.',
+          victim_name: targetCase.firstParty || targetCase.victimName || 'State of U.P.',
+          accused_name: targetCase.accusedName,
+          court_name: targetCase.courtName,
+          client_name: targetCase.clientName,
+          client_number: targetCase.clientNumber,
+          case_name: targetCase.caseName,
+          party_name: targetCase.partyName,
+          case_status: targetCase.caseStatus || (isDisposedCase ? 'Disposed' : 'Pending'),
+          remark: targetCase.remark || '',
+          disposal_comment: targetCase.disposalComment || targetCase.disposal_comment || null,
+          next_hearing: resolvedNextHearing,
+          doc_link: targetCase.docLink || '',
+          updated_at: new Date().toISOString()
+        };
+        if (resolvedDisposalDate) basePayload.disposal_date = resolvedDisposalDate;
+        let { data, error } = await safeTableUpdate('statecases', basePayload, originalNo);
+        if (error || !data || data.length === 0) {
+          await safeTableUpdate('criminalcases', basePayload, originalNo);
+        }
+      } else if (caseType === 'family') {
+        const basePayload = {
+          case_number: newCaseNumber,
+          case_year: parseInt(targetCase.caseYear, 10) || 2026,
+          matter_type: targetCase.matterType,
+          petitioner: targetCase.petitioner,
+          respondent: targetCase.respondent,
+          court_name: targetCase.courtName,
+          client_name: targetCase.clientName,
+          client_number: targetCase.clientNumber,
+          case_name: targetCase.caseName,
+          party_name: targetCase.respondent,
+          case_status: targetCase.caseStatus || (isDisposedCase ? 'Disposed' : 'Pending'),
+          remark: targetCase.remark || '',
+          disposal_comment: targetCase.disposalComment || targetCase.disposal_comment || null,
+          next_hearing: resolvedNextHearing,
+          doc_link: targetCase.docLink || '',
+          updated_at: new Date().toISOString()
+        };
+        if (targetCase.filingDate) basePayload.filing_date = targetCase.filingDate;
+        if (targetCase.marriageDate) basePayload.marriage_date = targetCase.marriageDate;
+        if (targetCase.maintenanceDetail) basePayload.maintenance_detail = targetCase.maintenanceDetail;
+        if (resolvedDisposalDate) basePayload.disposal_date = resolvedDisposalDate;
+        let { data, error } = await safeTableUpdate('familycases', basePayload, originalNo);
+        if (error || !data || data.length === 0) {
+          await safeTableUpdate('civilcases', {
+            case_number: newCaseNumber,
+            case_status: targetCase.caseStatus,
+            remark: targetCase.remark,
+            disposal_comment: targetCase.disposalComment || targetCase.disposal_comment || null,
+            next_hearing: resolvedNextHearing,
+            updated_at: new Date().toISOString()
+          }, originalNo);
+        }
+      } else if (caseType === 'revenue') {
+        const basePayload = {
+          case_number: newCaseNumber,
+          case_year: parseInt(targetCase.caseYear, 10) || 2026,
+          revenue_act_section: targetCase.revenueActSection || targetCase.actSection || 'Sec 34 (Mutation / दाखिल खारिज)',
+          village_mauja: targetCase.villageMauja || targetCase.village || '',
+          pargana_tehsil: targetCase.parganaTehsil || targetCase.tehsil || '',
+          gata_khata_no: targetCase.gataKhataNo || targetCase.gataNo || '',
+          applicant: targetCase.applicant,
+          opposite_party: targetCase.oppositeParty,
+          court_name: targetCase.courtName,
+          client_name: targetCase.clientName,
+          client_number: targetCase.clientNumber,
+          case_name: targetCase.caseName,
+          party_name: targetCase.oppositeParty,
+          case_status: targetCase.caseStatus || (isDisposedCase ? 'Disposed' : 'Pending'),
+          remark: targetCase.remark || '',
+          disposal_comment: targetCase.disposalComment || targetCase.disposal_comment || null,
+          next_hearing: resolvedNextHearing,
+          doc_link: targetCase.docLink || '',
+          updated_at: new Date().toISOString()
+        };
+        if (targetCase.filingDate) basePayload.filing_date = targetCase.filingDate;
+        if (resolvedDisposalDate) basePayload.disposal_date = resolvedDisposalDate;
+        let { data, error } = await safeTableUpdate('revenuecases', basePayload, originalNo);
+        if (error || !data || data.length === 0) {
+          await safeTableUpdate('civilcases', {
+            case_number: newCaseNumber,
+            case_status: targetCase.caseStatus,
+            remark: targetCase.remark,
+            disposal_comment: targetCase.disposalComment || targetCase.disposal_comment || null,
+            next_hearing: resolvedNextHearing,
+            updated_at: new Date().toISOString()
+          }, originalNo);
+        }
+      } else if (caseType === 'misc_civil') {
+        const basePayload = {
+          case_number: newCaseNumber,
+          case_year: parseInt(targetCase.caseYear, 10) || 2026,
+          original_case_number: targetCase.originalCaseNumber || targetCase.originalCase || '',
+          proceeding_type: targetCase.proceedingType || 'Misc Application',
+          applicant: targetCase.applicant,
+          opposite_party: targetCase.oppositeParty,
+          court_name: targetCase.courtName,
+          client_name: targetCase.clientName,
+          client_number: targetCase.clientNumber,
+          case_name: targetCase.caseName,
+          party_name: targetCase.oppositeParty,
+          case_status: targetCase.caseStatus || (isDisposedCase ? 'Disposed' : 'Pending'),
+          remark: targetCase.remark || '',
+          disposal_comment: targetCase.disposalComment || targetCase.disposal_comment || null,
+          next_hearing: resolvedNextHearing,
+          doc_link: targetCase.docLink || '',
+          updated_at: new Date().toISOString()
+        };
+        if (targetCase.filingDate) basePayload.filing_date = targetCase.filingDate;
+        if (resolvedDisposalDate) basePayload.disposal_date = resolvedDisposalDate;
+        let { data, error } = await safeTableUpdate('misccivilcases', basePayload, originalNo);
+        if (error || !data || data.length === 0) {
+          await safeTableUpdate('civilcases', {
+            case_number: newCaseNumber,
+            case_status: targetCase.caseStatus,
+            remark: targetCase.remark,
+            disposal_comment: targetCase.disposalComment || targetCase.disposal_comment || null,
+            next_hearing: resolvedNextHearing,
+            updated_at: new Date().toISOString()
+          }, originalNo);
+        }
+      } else if (caseType === 'misc_criminal') {
+        const basePayload = {
+          case_number: newCaseNumber,
+          crime_year: parseInt(targetCase.caseYear || targetCase.crimeYear, 10) || 2026,
+          original_case_number: targetCase.originalCaseNumber || targetCase.originalCase || '',
+          proceeding_type: targetCase.proceedingType || 'Bail Application (Sec 439 CrPC)',
+          police_station: targetCase.policeStation || '',
+          crime_section: targetCase.crimeSection || '',
+          filing_date: targetCase.filingDate || targetCase.crimeFilingDate || null,
+          applicant: targetCase.applicant,
+          opposite_party: targetCase.oppositeParty || 'State of U.P.',
+          court_name: targetCase.courtName,
+          client_name: targetCase.clientName,
+          client_number: targetCase.clientNumber,
+          case_name: targetCase.caseName,
+          party_name: targetCase.applicant,
+          case_status: targetCase.caseStatus || (isDisposedCase ? 'Disposed' : 'Pending'),
+          remark: targetCase.remark || '',
+          disposal_comment: targetCase.disposalComment || targetCase.disposal_comment || null,
+          next_hearing: resolvedNextHearing,
+          doc_link: targetCase.docLink || '',
+          updated_at: new Date().toISOString()
+        };
+        if (resolvedDisposalDate) basePayload.disposal_date = resolvedDisposalDate;
+        let { data, error } = await safeTableUpdate('misccriminalcases', basePayload, originalNo);
+        if (error || !data || data.length === 0) {
+          await safeTableUpdate('criminalcases', {
+            case_number: newCaseNumber,
+            case_status: targetCase.caseStatus,
+            remark: targetCase.remark,
+            disposal_comment: targetCase.disposalComment || targetCase.disposal_comment || null,
+            next_hearing: resolvedNextHearing,
+            updated_at: new Date().toISOString()
+          }, originalNo);
+        }
+      } else if (caseType === 'complaint') {
+        const basePayload = {
+          case_number: newCaseNumber,
+          case_year: parseInt(targetCase.caseYear, 10) || 2026,
+          complaint_type: targetCase.complaintType || 'Cheque Bounce (Sec 138 NI Act)',
+          complainant: targetCase.complainant || targetCase.plaintiff || 'Complainant',
+          accused_name: targetCase.accusedName || targetCase.defendant || 'Accused',
+          section_act: targetCase.sectionAct || '',
+          police_station: targetCase.policeStation || '',
+          filing_date: targetCase.filingDate || null,
+          court_name: targetCase.courtName,
+          client_name: targetCase.clientName,
+          client_number: targetCase.clientNumber,
+          case_name: targetCase.caseName,
+          party_name: targetCase.accusedName,
+          case_status: targetCase.caseStatus || (isDisposedCase ? 'Disposed' : 'Pending'),
+          remark: targetCase.remark || '',
+          disposal_comment: targetCase.disposalComment || targetCase.disposal_comment || null,
+          next_hearing: resolvedNextHearing,
+          doc_link: targetCase.docLink || '',
+          updated_at: new Date().toISOString()
+        };
+        if (resolvedDisposalDate) basePayload.disposal_date = resolvedDisposalDate;
+        let { data, error } = await safeTableUpdate('complaintcases', basePayload, originalNo);
+        if (error || !data || data.length === 0) {
+          await safeTableUpdate('criminalcases', {
+            case_number: newCaseNumber,
+            case_status: targetCase.caseStatus,
+            remark: targetCase.remark,
+            disposal_comment: targetCase.disposalComment || targetCase.disposal_comment || null,
+            next_hearing: resolvedNextHearing,
+            updated_at: new Date().toISOString()
+          }, originalNo);
+        }
+      } else {
+        const basePayload = {
+          case_number: newCaseNumber,
+          case_year: parseInt(targetCase.caseYear, 10) || 2026,
+          filing_date: targetCase.filingDate || null,
+          plaintiff: targetCase.plaintiff,
+          defendant: targetCase.defendant,
+          court_name: targetCase.courtName,
+          client_name: targetCase.clientName,
+          client_number: targetCase.clientNumber,
+          case_name: targetCase.caseName,
+          party_name: targetCase.partyName,
+          case_status: targetCase.caseStatus || (isDisposedCase ? 'Disposed' : 'Pending'),
+          remark: targetCase.remark || '',
+          disposal_comment: targetCase.disposalComment || targetCase.disposal_comment || null,
+          next_hearing: resolvedNextHearing,
+          doc_link: targetCase.docLink || '',
+          updated_at: new Date().toISOString()
+        };
+        if (resolvedDisposalDate) basePayload.disposal_date = resolvedDisposalDate;
+        let { error } = await safeTableUpdate('civilcases', basePayload, originalNo);
+        if (error) {
+          delete basePayload.doc_link;
+          delete basePayload.remark;
+          delete basePayload.disposal_comment;
+          delete basePayload.disposal_date;
+          await supabaseClient.from('civilcases').update(basePayload).eq('case_number', originalNo);
+        }
+      }
+
+      // If next hearing date is provided, sync the matching hearing row in hearings table
+      if (targetCase.nextHearing && targetCase.nextHearing !== '—') {
+        const nextISO = toISODate(targetCase.nextHearing);
+        const targetProc = targetCase.hearingProcess || 'Listed Hearing';
+        const prevISO = toISODate(targetCase.previousNextHearing || targetCase._prevNextHearing || '');
+        const lookupDates = [nextISO, prevISO].filter(Boolean);
+
+        let updatedExisting = false;
+        for (const d of lookupDates) {
+          const { data: existingRows } = await supabaseClient
+            .from('hearings')
+            .select('id')
+            .ilike('case_number', originalNo)
+            .eq('hearing_date', d);
+          if (existingRows && existingRows.length > 0) {
+            await supabaseClient
+              .from('hearings')
+              .update({
+                case_number: newCaseNumber,
+                hearing_date: nextISO || targetCase.nextHearing,
+                next_hearing_date: nextISO || targetCase.nextHearing,
+                process: targetProc,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existingRows[0].id);
+            updatedExisting = true;
+            break;
+          }
+        }
+        if (!updatedExisting && nextISO) {
+          await supabaseClient.from('hearings').insert([{
+            case_number: newCaseNumber,
+            case_type: caseType || 'civil',
+            hearing_date: nextISO,
+            next_hearing_date: nextISO,
+            process: targetProc,
+            created_at: new Date().toISOString()
+          }]);
+        }
+      }
+
+      // If case number changed, cascade to hearings and tasks
+      if (originalNo.toLowerCase() !== newCaseNumber.toLowerCase()) {
+        if (typeof cascadeUpdateCaseNumber === 'function') {
+          await cascadeUpdateCaseNumber(originalNo, newCaseNumber);
+        } else {
+          const { error: hError } = await supabaseClient.from('hearings')
+            .update({ case_number: newCaseNumber })
+            .eq('case_number', originalNo);
+          if (hError) console.error('Supabase update hearings case_number error:', hError);
+        }
+      }
+    } catch (e) {
+      console.error('Supabase update error:', e);
+    }
+  }
+
+  await performPostCrudRefresh({ caseNumber: newCaseNumber });
+}
+
+// Delete Case in Supabase (or local fallback)
+async function deleteCaseFromSupabase(caseNumber) {
+  if (!caseNumber) return;
+  const targetNo = caseNumber.trim();
+  const client = (typeof window !== 'undefined' && window.supabaseClient) ? window.supabaseClient : supabaseClient;
+  const records = (typeof window !== 'undefined' && Array.isArray(window.allCaseRecords)) ? window.allCaseRecords : allCaseRecords;
+  const hearings = (typeof window !== 'undefined' && Array.isArray(window.allHearingRecords)) ? window.allHearingRecords : allHearingRecords;
+  const tasks = (typeof window !== 'undefined' && Array.isArray(window.caseTasks)) ? window.caseTasks : caseTasks;
+
+  if (client) {
+    try {
+      const caseTables = [
+        'civilcases',
+        'statecases',
+        'criminalcases',
+        'familycases',
+        'revenuecases',
+        'misccivilcases',
+        'misccriminalcases',
+        'complaintcases'
+      ];
+      await Promise.all([
+        ...caseTables.map(tbl => client.from(tbl).delete().ilike('case_number', targetNo)),
+        client.from('hearings').delete().ilike('case_number', targetNo),
+        client.from('case_todos').delete().ilike('case_number', targetNo),
+        client.from('case_transfers').delete().ilike('case_number', targetNo)
+      ]);
+    } catch (e) {
+      console.error('Supabase delete error:', e);
+    }
+  }
+
+  const idx = records.findIndex(c => 
+    (c.caseNo || '').trim().toLowerCase() === targetNo.toLowerCase() || 
+    (c.criminalCaseNumber || '').trim().toLowerCase() === targetNo.toLowerCase()
+  );
+  if (idx !== -1) {
+    records.splice(idx, 1);
+  }
+  if (typeof window !== 'undefined') window.allCaseRecords = records;
+  allCaseRecords = records;
+
+  // Cascade in-memory deletion to hearings
+  if (Array.isArray(hearings)) {
+    const updatedHearings = hearings.filter(h => 
+      (h.case_number || '').trim().toLowerCase() !== targetNo.toLowerCase()
+    );
+    if (typeof window !== 'undefined') window.allHearingRecords = updatedHearings;
+    allHearingRecords = updatedHearings;
+  }
+
+  // Cascade in-memory deletion to tasks
+  if (Array.isArray(tasks)) {
+    const updatedTasks = tasks.filter(t => 
+      (t.caseNo || '').trim().toLowerCase() !== targetNo.toLowerCase()
+    );
+    if (typeof window !== 'undefined') window.caseTasks = updatedTasks;
+    caseTasks = updatedTasks;
+    if (typeof saveCaseTasksLocally === 'function') saveCaseTasksLocally();
+    if (typeof renderCaseTasks === 'function') renderCaseTasks(currentTodoFilter);
+  }
+
+  // Cascade in-memory deletion to court transfers
+  if (Array.isArray(allCaseTransfers)) {
+    allCaseTransfers = allCaseTransfers.filter(t => 
+      (t.case_number || '').trim().toLowerCase() !== targetNo.toLowerCase()
+    );
+    try { localStorage.setItem('case_transfers_backup', JSON.stringify(allCaseTransfers)); } catch(e) {}
+    if (typeof renderRecentTransfersTable === 'function') renderRecentTransfersTable();
+    if (typeof updateTransfersCountBadge === 'function') updateTransfersCountBadge();
+  }
+
+  await performPostCrudRefresh();
+  if (typeof populateTodoCaseDropdown === 'function') populateTodoCaseDropdown();
+  if (typeof renderCalendarView === 'function' && typeof currentCalendarMonth !== 'undefined') {
+    renderCalendarView(currentCalendarYear, currentCalendarMonth);
+  }
+}
+
+// Update Hearing in Supabase (or local fallback)
+// Update a case row's hearing fields in one table, matched case-insensitively.
+// If the full payload (which may include previous_hearing/previous_process) is
+// rejected — e.g. a table without those columns — retry with the minimal
+// next_hearing/hearing_process payload so the forward date still lands.
+async function updateCaseTableHearing(tbl, variant, payload) {
+  const client = (typeof window !== 'undefined' && window.supabaseClient) ? window.supabaseClient : supabaseClient;
+  if (!client) return { data: [], error: null };
+  let res = await client.from(tbl).update(payload).ilike('case_number', variant).select('id');
+  if (res && res.error && (payload.previous_hearing || payload.previous_process)) {
+    const minimal = { next_hearing: payload.next_hearing, hearing_process: payload.hearing_process };
+    const retry = await client.from(tbl).update(minimal).ilike('case_number', variant).select('id');
+    if (!retry || !retry.error) {
+      console.warn(`Hearing update on "${tbl}" needed the minimal payload (full payload rejected: ${res.error.message}).`);
+      return retry || { data: [], error: null };
+    }
+  }
+  return res;
+}
+
+async function updateHearingInSupabase(caseNumber, hearingDate, process, actionTaken = '') {
+  const records = (typeof window !== 'undefined' && Array.isArray(window.allCaseRecords)) ? window.allCaseRecords : allCaseRecords;
+  const client = (typeof window !== 'undefined' && window.supabaseClient) ? window.supabaseClient : supabaseClient;
+
+  // Determine case type from allCaseRecords for proper tagging
+  const cleanKey = (caseNumber || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const matchedCase = records.find(c => {
+    const num1 = (c.caseNo || '').toLowerCase();
+    const num2 = (c.criminalCaseNumber || '').toLowerCase();
+    if (num1 === caseNumber.toLowerCase() || num2 === caseNumber.toLowerCase()) return true;
+    if (cleanKey && (num1.replace(/[^a-z0-9]/g, '') === cleanKey || num2.replace(/[^a-z0-9]/g, '') === cleanKey)) return true;
+    return false;
+  });
+
+  const caseType = matchedCase?.caseType || 'civil';
+  const resolvedCaseNumber = String(matchedCase ? (matchedCase.caseNo || matchedCase.criminalCaseNumber || caseNumber) : caseNumber).trim().toUpperCase();
+  const resolvedAction = actionTaken && actionTaken.trim() ? actionTaken.trim() : '';
+
+  const hearingPayload = {
+    case_number: resolvedCaseNumber,
+    case_type: caseType,
+    hearing_date: hearingDate,
+    process: process,
+    action_taken: resolvedAction
+  };
+
+  // --- Supabase: upsert (update existing or insert new) ---
+  if (client) {
+    try {
+      // Check if a hearing already exists for this case + date (case-insensitively to prevent duplicates)
+      const baseQuery = client
+        .from('hearings')
+        .select('id')
+        .ilike('case_number', resolvedCaseNumber);
+      const firstEq = baseQuery.eq('hearing_date', hearingDate);
+      const query = (firstEq && typeof firstEq.eq === 'function' && caseType)
+        ? firstEq.eq('case_type', caseType)
+        : firstEq;
+      const { data: existing, error: fetchErr } = await query;
+
+      if (fetchErr) {
+        console.error('Supabase hearing lookup error:', fetchErr);
+      }
+
+      let dbError = null;
+      if (existing && existing.length > 0) {
+        // UPDATE first existing hearing row
+        const { error } = await client.from('hearings')
+          .update({
+            case_number: resolvedCaseNumber,
+            case_type: caseType,
+            process: process,
+            action_taken: resolvedAction
+          })
+          .eq('id', existing[0].id);
+        dbError = error;
+
+        // Clean up redundant duplicate rows if any exist in the database for the same case + date
+        if (existing.length > 1) {
+          const duplicateIds = existing.slice(1).map(x => x.id);
+          client.from('hearings').delete().in('id', duplicateIds).then(() => {
+            console.log(`[DEDUP] Cleaned up ${duplicateIds.length} duplicate hearing row(s) for "${resolvedCaseNumber}" on ${hearingDate}`);
+          }).catch(err => console.warn('[DEDUP] Error cleaning duplicate hearings:', err));
+        }
+      } else {
+        // INSERT new hearing row
+        const { error } = await client.from('hearings')
+          .insert([hearingPayload]);
+        dbError = error;
+      }
+
+      if (dbError) {
+        console.error('Supabase hearing save error:', dbError);
+        alert('⚠️ Failed to save hearing to database: ' + (dbError.message || 'Unknown error') + '. Changes saved locally only.');
+      } else {
+        // Update next_hearing and hearing_process across all relevant case tables
+        const allCaseTables = [
+          'civilcases',
+          'statecases',
+          'criminalcases',
+          'familycases',
+          'revenuecases',
+          'misccivilcases',
+          'misccriminalcases',
+          'complaintcases'
+        ];
+
+        const tableMap = {
+          'civil': 'civilcases',
+          'state': 'statecases',
+          'criminal': 'criminalcases',
+          'family': 'familycases',
+          'revenue': 'revenuecases',
+          'misc_civil': 'misccivilcases',
+          'misc_criminal': 'misccriminalcases',
+          'complaint': 'complaintcases'
+        };
+
+        const targetTable = tableMap[caseType];
+        const updatePayload = { next_hearing: hearingDate, hearing_process: process };
+
+        if (matchedCase && matchedCase.nextHearing && matchedCase.nextHearing !== '—' && toISODate(matchedCase.nextHearing) !== toISODate(hearingDate)) {
+          updatePayload.previous_hearing = matchedCase.nextHearing;
+          updatePayload.previous_process = matchedCase.hearingProcess || '—';
+        }
+
+        // Update the case row in every table it might live in; .select() makes each
+        // update return its affected rows so failures and 0-row matches are visible.
+        // Candidate match patterns: the resolved number, the raw stored variants from
+        // the matched local record, and a fuzzy pattern where punctuation runs become
+        // single-char wildcards (DB may store "CSCR/123/2024" vs "CSCR 123 2024").
+        const matchVariants = [resolvedCaseNumber];
+        if (matchedCase) {
+          [matchedCase.caseNo, matchedCase.criminalCaseNumber].forEach(v => {
+            const s = String(v || '').trim();
+            if (s && s.toUpperCase() !== resolvedCaseNumber) matchVariants.push(s.toUpperCase());
+          });
+        }
+        if (String(caseNumber).trim().toUpperCase() !== resolvedCaseNumber) {
+          matchVariants.push(String(caseNumber).trim().toUpperCase());
+        }
+        const fuzzy = resolvedCaseNumber.replace(/[^A-Z0-9]+/g, '_');
+        if (fuzzy !== resolvedCaseNumber) matchVariants.push(fuzzy);
+
+        let updateResults = [];
+        for (const variant of matchVariants) {
+          updateResults = await Promise.allSettled(
+            allCaseTables.map(tbl => updateCaseTableHearing(tbl, variant, updatePayload))
+          );
+          if (updateResults.some(res =>
+            res.status === 'fulfilled' && res.value && !res.value.error &&
+            Array.isArray(res.value.data) && res.value.data.length > 0
+          )) break; // matched — stop trying variants
+        }
+
+        let anyError = false;
+        let anyRowUpdated = false;
+        updateResults.forEach((res, idx) => {
+          const tbl = allCaseTables[idx];
+          if (res.status === 'rejected') {
+            anyError = true;
+            console.error(`Hearing case-table update failed on "${tbl}":`, res.reason);
+          } else if (res.value && res.value.error) {
+            anyError = true;
+            console.error(`Hearing case-table update failed on "${tbl}":`, res.value.error);
+          } else if (Array.isArray(res.value && res.value.data) && res.value.data.length > 0) {
+            anyRowUpdated = true;
+          }
+        });
+
+        // Only a genuine failure to update the case row anywhere is user-facing;
+        // errors on unrelated tables (which matched no row anyway) are just logged.
+        if (!anyRowUpdated) {
+          const detail = anyError
+            ? 'One or more case tables rejected the update (see console for details).'
+            : `No case row matched case number "${resolvedCaseNumber}" in any table.`;
+          console.error('Hearing case-table update problem:', detail);
+          alert('⚠️ Hearing saved, but the case record was NOT updated in the database: ' + detail +
+                '\n\nThe next hearing date may show incorrectly after reload. Please check the case number and try again.');
+        } else if (anyError) {
+          console.warn('Hearing case-table update: case row updated, but some unrelated tables rejected the update (see console).');
+        }
+      }
+    } catch (e) {
+      console.error('Supabase hearing update error:', e);
+      alert('⚠️ Hearing update encountered an error. Changes saved locally only.');
+    }
+  }
+
+  // --- Local in-memory: prevent duplicate entries ---
+  const newDateISO = toISODate(hearingDate);
+  allHearingRecords = allHearingRecords.filter(h =>
+    !((h.case_number || '').trim().toLowerCase() === resolvedCaseNumber.toLowerCase() &&
+      toISODate(h.hearing_date || h.next_hearing_date) === newDateISO)
+  );
+  allHearingRecords.unshift({
+    ...hearingPayload,
+    created_at: new Date().toISOString()
+  });
+
+  // Update in-memory case record
+  if (matchedCase) {
+    if (matchedCase.nextHearing && matchedCase.nextHearing !== '—' && toISODate(matchedCase.nextHearing) !== newDateISO) {
+      matchedCase.previousHearing = matchedCase.nextHearing;
+      matchedCase.previousProcess = matchedCase.hearingProcess || '—';
+    }
+    matchedCase.nextHearing = hearingDate;
+    matchedCase.hearingProcess = process;
+  }
+
+  await performPostCrudRefresh({ caseNumber: resolvedCaseNumber });
+}
+
+function _findCaseRecordByNumber(caseNumber) {
+  const records = (typeof window !== 'undefined' && Array.isArray(window.allCaseRecords)) ? window.allCaseRecords : allCaseRecords;
+  const cleanKey = (caseNumber || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  return records.find(c => {
+    const num1 = (c.caseNo || '').toLowerCase();
+    const num2 = (c.criminalCaseNumber || '').toLowerCase();
+    if (num1 === (caseNumber || '').toLowerCase() || num2 === (caseNumber || '').toLowerCase()) return true;
+    if (cleanKey && (num1.replace(/[^a-z0-9]/g, '') === cleanKey || num2.replace(/[^a-z0-9]/g, '') === cleanKey)) return true;
+    return false;
+  }) || null;
+}
+
+async function _syncCaseTableHearingFields(resolvedCaseNumber, matchedCase, rawCaseNumber, updatePayload) {
+  const allCaseTables = [
+    'civilcases', 'statecases', 'criminalcases', 'familycases',
+    'revenuecases', 'misccivilcases', 'misccriminalcases', 'complaintcases'
+  ];
+  const matchVariants = [resolvedCaseNumber];
+  if (matchedCase) {
+    [matchedCase.caseNo, matchedCase.criminalCaseNumber].forEach(v => {
+      const s = String(v || '').trim();
+      if (s && s.toUpperCase() !== resolvedCaseNumber) matchVariants.push(s.toUpperCase());
+    });
+  }
+  const rawUpper = String(rawCaseNumber || '').trim().toUpperCase();
+  if (rawUpper && rawUpper !== resolvedCaseNumber) matchVariants.push(rawUpper);
+  const fuzzy = resolvedCaseNumber.replace(/[^A-Z0-9]+/g, '_');
+  if (fuzzy !== resolvedCaseNumber) matchVariants.push(fuzzy);
+
+  let updateResults = [];
+  for (const variant of matchVariants) {
+    updateResults = await Promise.allSettled(
+      allCaseTables.map(tbl => updateCaseTableHearing(tbl, variant, updatePayload))
+    );
+    if (updateResults.some(res =>
+      res.status === 'fulfilled' && res.value && !res.value.error &&
+      Array.isArray(res.value.data) && res.value.data.length > 0
+    )) break;
+  }
+  return updateResults.some(res =>
+    res.status === 'fulfilled' && res.value && !res.value.error &&
+    Array.isArray(res.value.data) && res.value.data.length > 0
+  );
+}
+
+/**
+ * Corrects a mistaken hearing date in-place without overwriting previous_hearing
+ * and without leaving a phantom row in the hearings table.
+ */
+async function correctHearingDateInSupabase(caseNumber, wrongDateISO, correctedDateISO, correctedStage, actionTaken = '') {
+  const client = (typeof window !== 'undefined' && window.supabaseClient) ? window.supabaseClient : supabaseClient;
+  const matchedCase = _findCaseRecordByNumber(caseNumber);
+  const caseType = matchedCase?.caseType || 'civil';
+  const resolvedCaseNumber = String(matchedCase ? (matchedCase.caseNo || matchedCase.criminalCaseNumber || caseNumber) : caseNumber).trim().toUpperCase();
+
+  const wrongISO = toISODate(wrongDateISO);
+  const newISO = toISODate(correctedDateISO);
+  if (!newISO) throw new Error('Invalid corrected hearing date.');
+
+  const resolvedStage = (correctedStage || matchedCase?.hearingProcess || 'Listed Hearing').trim();
+  const resolvedAction = actionTaken && actionTaken.trim()
+    ? actionTaken.trim()
+    : `Date corrected${wrongISO ? ` from ${wrongISO}` : ''}: ${resolvedStage}`;
+
+  const currentNextISO = toISODate(matchedCase?.nextHearing);
+  const shouldUpdateCaseNext = Boolean(
+    matchedCase && !isCaseDisposed(matchedCase) &&
+    (!wrongISO || currentNextISO === wrongISO || !currentNextISO)
+  );
+
+  if (client) {
+    const { data: existingNew } = await client
+      .from('hearings')
+      .select('id')
+      .ilike('case_number', resolvedCaseNumber)
+      .eq('hearing_date', newISO);
+
+    const { data: existingWrong } = wrongISO && wrongISO !== newISO
+      ? await client
+          .from('hearings')
+          .select('id')
+          .ilike('case_number', resolvedCaseNumber)
+          .eq('hearing_date', wrongISO)
+      : { data: [] };
+
+    if (existingNew && existingNew.length > 0) {
+      await client.from('hearings').update({
+        process: resolvedStage,
+        action_taken: resolvedAction
+      }).eq('id', existingNew[0].id);
+
+      if (existingWrong && existingWrong.length > 0) {
+        const wrongIds = existingWrong.map(r => r.id);
+        await client.from('hearings').delete().in('id', wrongIds);
+      }
+    } else if (existingWrong && existingWrong.length > 0) {
+      await client.from('hearings').update({
+        hearing_date: newISO,
+        process: resolvedStage,
+        action_taken: resolvedAction
+      }).eq('id', existingWrong[0].id);
+
+      if (existingWrong.length > 1) {
+        await client.from('hearings').delete().in('id', existingWrong.slice(1).map(r => r.id));
+      }
+    } else {
+      await client.from('hearings').insert([{
+        case_number: resolvedCaseNumber,
+        case_type: caseType,
+        hearing_date: newISO,
+        process: resolvedStage,
+        action_taken: resolvedAction
+      }]);
+    }
+
+    if (shouldUpdateCaseNext) {
+      await _syncCaseTableHearingFields(resolvedCaseNumber, matchedCase, caseNumber, {
+        next_hearing: newISO,
+        hearing_process: resolvedStage
+      });
+    }
+  }
+
+  // Sync in-memory allHearingRecords (remove wrongISO and old newISO, keep updated single entry)
+  const recordsList = (typeof window !== 'undefined' && Array.isArray(window.allHearingRecords)) ? window.allHearingRecords : allHearingRecords;
+  const filtered = recordsList.filter(h => {
+    if ((h.case_number || '').trim().toLowerCase() !== resolvedCaseNumber.toLowerCase()) return true;
+    const hISO = toISODate(h.hearing_date || h.next_hearing_date);
+    return hISO !== wrongISO && hISO !== newISO;
+  });
+  filtered.unshift({
+    case_number: resolvedCaseNumber,
+    case_type: caseType,
+    hearing_date: newISO,
+    process: resolvedStage,
+    action_taken: resolvedAction,
+    created_at: new Date().toISOString()
+  });
+  allHearingRecords = filtered;
+  if (typeof window !== 'undefined') window.allHearingRecords = filtered;
+
+  if (shouldUpdateCaseNext && matchedCase) {
+    matchedCase.nextHearing = newISO;
+    matchedCase.hearingProcess = resolvedStage;
+  }
+
+  await performPostCrudRefresh({ caseNumber: resolvedCaseNumber });
+  return { caseNumber: resolvedCaseNumber, wrongDate: wrongISO, correctedDate: newISO, stage: resolvedStage };
+}
+
+/**
+ * Deletes a mistaken hearing row from hearings table and, if it was the case's
+ * current next_hearing, reverts next_hearing back to previous_hearing (or latest valid hearing).
+ */
+async function deleteOrRevertHearingInSupabase(caseNumber, targetDateISO) {
+  const client = (typeof window !== 'undefined' && window.supabaseClient) ? window.supabaseClient : supabaseClient;
+  const matchedCase = _findCaseRecordByNumber(caseNumber);
+  const resolvedCaseNumber = String(matchedCase ? (matchedCase.caseNo || matchedCase.criminalCaseNumber || caseNumber) : caseNumber).trim().toUpperCase();
+  const targetISO = toISODate(targetDateISO);
+  if (!targetISO) throw new Error('Invalid hearing date to delete/revert.');
+
+  if (client) {
+    await client
+      .from('hearings')
+      .delete()
+      .ilike('case_number', resolvedCaseNumber)
+      .eq('hearing_date', targetISO);
+  }
+
+  const recordsList = (typeof window !== 'undefined' && Array.isArray(window.allHearingRecords)) ? window.allHearingRecords : allHearingRecords;
+  const remaining = recordsList.filter(h => {
+    if ((h.case_number || '').trim().toLowerCase() !== resolvedCaseNumber.toLowerCase()) return true;
+    return toISODate(h.hearing_date || h.next_hearing_date) !== targetISO;
+  });
+  allHearingRecords = remaining;
+  if (typeof window !== 'undefined') window.allHearingRecords = remaining;
+
+  const currentNextISO = toISODate(matchedCase?.nextHearing);
+  if (matchedCase && currentNextISO === targetISO) {
+    const prevISO = toISODate(matchedCase.previousHearing);
+    let fallbackDate = (prevISO && prevISO !== targetISO) ? prevISO : '';
+    let fallbackProcess = (matchedCase.previousProcess && matchedCase.previousProcess !== '—') ? matchedCase.previousProcess : '';
+
+    if (!fallbackDate) {
+      const latestRemaining = remaining
+        .filter(h => (h.case_number || '').trim().toLowerCase() === resolvedCaseNumber.toLowerCase() && toISODate(h.hearing_date))
+        .sort((a, b) => new Date(b.hearing_date) - new Date(a.hearing_date))[0];
+      if (latestRemaining) {
+        fallbackDate = toISODate(latestRemaining.hearing_date);
+        fallbackProcess = latestRemaining.process || fallbackProcess;
+      }
+    }
+
+    if (client) {
+      await _syncCaseTableHearingFields(resolvedCaseNumber, matchedCase, caseNumber, {
+        next_hearing: fallbackDate || null,
+        hearing_process: fallbackProcess || null
+      });
+    }
+    matchedCase.nextHearing = fallbackDate || '';
+    matchedCase.hearingProcess = fallbackProcess || '';
+  }
+
+  await performPostCrudRefresh({ caseNumber: resolvedCaseNumber });
+  return { caseNumber: resolvedCaseNumber, deletedDate: targetISO, restoredDate: matchedCase?.nextHearing || '' };
+}
+
+// ==============================================================================
+// Referential Integrity & Cascading Updates Suite
+// ==============================================================================
+
+async function cascadeUpdateCourtName(oldCourtName, newCourtName) {
+  const oldName = (oldCourtName || '').trim();
+  const newName = (newCourtName || '').trim();
+  if (!oldName || !newName || oldName.toLowerCase() === newName.toLowerCase()) return 0;
+
+  console.log(`[CASCADE] Updating court name from "${oldName}" to "${newName}" across cases and database...`);
+
+  unmarkCourtAsDeleted(newName);
+  markCourtAsDeleted(oldName);
+
+  // 1. Update in-memory courts array
+  const cIdx = courts.findIndex(c => c.trim().toLowerCase() === oldName.toLowerCase());
+  if (cIdx !== -1) {
+    courts[cIdx] = newName;
+  } else if (!courts.some(c => c.trim().toLowerCase() === newName.toLowerCase())) {
+    courts.push(newName);
+  }
+
+  // Update defaultCourts in-memory array
+  const dIdx = defaultCourts.findIndex(c => c.trim().toLowerCase() === oldName.toLowerCase());
+  if (dIdx !== -1) {
+    defaultCourts[dIdx] = newName;
+  } else if (!defaultCourts.some(c => c.trim().toLowerCase() === newName.toLowerCase())) {
+    defaultCourts.push(newName);
+  }
+
+  // Update courtsList in-memory array so metadata stays bound to newName
+  if (typeof courtsList !== 'undefined' && Array.isArray(courtsList)) {
+    const lIdx = courtsList.findIndex(c => (c.court_name || '').trim().toLowerCase() === oldName.toLowerCase());
+    if (lIdx !== -1) {
+      courtsList[lIdx].court_name = newName;
+    }
+    window.courtsList = courtsList;
+  }
+
+  // 2. Update in-memory allCaseRecords
+  let affectedCaseCount = 0;
+  if (Array.isArray(allCaseRecords)) {
+    allCaseRecords.forEach(c => {
+      let changed = false;
+      if ((c.courtName || '').trim().toLowerCase() === oldName.toLowerCase()) {
+        c.courtName = newName;
+        changed = true;
+      }
+      if ((c.criminalCourtName || '').trim().toLowerCase() === oldName.toLowerCase()) {
+        c.criminalCourtName = newName;
+        changed = true;
+      }
+      if (changed) affectedCaseCount++;
+    });
+  }
+
+  // Update in-memory allCaseTransfers
+  if (Array.isArray(allCaseTransfers)) {
+    allCaseTransfers.forEach(t => {
+      if ((t.fromCourt || '').trim().toLowerCase() === oldName.toLowerCase()) {
+        t.fromCourt = newName;
+      }
+      if ((t.toCourt || '').trim().toLowerCase() === oldName.toLowerCase()) {
+        t.toCourt = newName;
+      }
+    });
+    try { localStorage.setItem('case_transfers_backup', JSON.stringify(allCaseTransfers)); } catch(e) {}
+  }
+
+  // 3. Update Supabase database across all tables
+  if (supabaseClient) {
+    const caseTables = [
+      'civilcases',
+      'statecases',
+      'criminalcases',
+      'familycases',
+      'revenuecases',
+      'misccivilcases',
+      'misccriminalcases',
+      'complaintcases'
+    ];
+
+    try {
+      // Check if oldName existed in courts table
+      const { data: existingCourt } = await supabaseClient
+        .from('courts')
+        .select('id')
+        .ilike('court_name', oldName)
+        .limit(1);
+
+      if (existingCourt && existingCourt.length > 0) {
+        await supabaseClient
+          .from('courts')
+          .update({ court_name: newName, updated_at: new Date().toISOString() })
+          .eq('id', existingCourt[0].id);
+      } else {
+        await supabaseClient
+          .from('courts')
+          .insert([{ court_name: newName, court_type: 'District Court' }]);
+      }
+
+      // Update all case tables where court_name = oldName
+      const tableUpdates = caseTables.map(async (table) => {
+        try {
+          const { error } = await supabaseClient
+            .from(table)
+            .update({ court_name: newName, updated_at: new Date().toISOString() })
+            .ilike('court_name', oldName);
+          if (error && !error.message?.includes('column')) {
+            console.warn(`[CASCADE] Note on table ${table}:`, error.message);
+          }
+        } catch (tblErr) {
+          console.warn(`[CASCADE] Exception on table ${table}:`, tblErr);
+        }
+      });
+
+      // Also check criminal_court_name column on criminalcases if exists
+      tableUpdates.push((async () => {
+        try {
+          await supabaseClient
+            .from('criminalcases')
+            .update({ criminal_court_name: newName, updated_at: new Date().toISOString() })
+            .ilike('criminal_court_name', oldName);
+        } catch (e) {}
+      })());
+
+      // Update case_transfers
+      tableUpdates.push((async () => {
+        try {
+          await supabaseClient
+            .from('case_transfers')
+            .update({ from_court: newName })
+            .ilike('from_court', oldName);
+        } catch (e) {}
+      })());
+      tableUpdates.push((async () => {
+        try {
+          await supabaseClient
+            .from('case_transfers')
+            .update({ to_court: newName })
+            .ilike('to_court', oldName);
+        } catch (e) {}
+      })());
+
+      await Promise.all(tableUpdates);
+      console.log(`[CASCADE] Database cascading court update completed: "${oldName}" -> "${newName}".`);
+    } catch (supaErr) {
+      console.error('[CASCADE] Supabase cascading court update error:', supaErr);
+    }
+  }
+
+  saveCourtsToBackup();
+
+  // 4. Re-render UI components to reflect updated court name
+  if (typeof renderCourtOptions === 'function') renderCourtOptions();
+  if (typeof renderCriminalCourtOptions === 'function') renderCriminalCourtOptions();
+  if (typeof renderSearchCourtFilterOptions === 'function') renderSearchCourtFilterOptions();
+  if (typeof renderCourtsTable === 'function') renderCourtsTable();
+  if (typeof refreshAllCaseTables === 'function') refreshAllCaseTables();
+  if (typeof filterCaseTables === 'function') filterCaseTables();
+  if (typeof renderRecentTransfersTable === 'function') renderRecentTransfersTable();
+  if (typeof renderCalendarView === 'function' && typeof currentCalendarMonth !== 'undefined') {
+    renderCalendarView(currentCalendarYear, currentCalendarMonth);
+  }
+  if (typeof populateTodoCaseDropdown === 'function') populateTodoCaseDropdown();
+
+  return affectedCaseCount;
+}
+if (typeof cascadeUpdateCourtName !== 'undefined') window.cascadeUpdateCourtName = cascadeUpdateCourtName;
+
+async function cascadeUpdateCaseNumber(oldCaseNo, newCaseNo) {
+  const oldNo = (oldCaseNo || '').trim();
+  const newNo = (newCaseNo || '').trim();
+  if (!oldNo || !newNo || oldNo.toLowerCase() === newNo.toLowerCase()) return;
+
+  console.log(`[CASCADE] Cascading case number change from "${oldNo}" to "${newNo}"...`);
+
+  // 1. In-memory allHearingRecords
+  if (Array.isArray(allHearingRecords)) {
+    allHearingRecords.forEach(h => {
+      if ((h.case_number || '').trim().toLowerCase() === oldNo.toLowerCase()) {
+        h.case_number = newNo;
+      }
+    });
+  }
+
+  // 2. In-memory caseTasks (To-Do items)
+  let tasksUpdated = 0;
+  if (Array.isArray(caseTasks)) {
+    caseTasks.forEach(t => {
+      if ((t.caseNo || '').trim().toLowerCase() === oldNo.toLowerCase()) {
+        t.caseNo = newNo;
+        tasksUpdated++;
+      }
+    });
+    if (tasksUpdated > 0 && typeof saveCaseTasksLocally === 'function') {
+      saveCaseTasksLocally();
+      if (typeof renderCaseTasks === 'function') renderCaseTasks(currentTodoFilter);
+    }
+  }
+
+  // 2.5 In-memory allCaseTransfers
+  if (Array.isArray(allCaseTransfers)) {
+    allCaseTransfers.forEach(t => {
+      if ((t.case_number || '').trim().toLowerCase() === oldNo.toLowerCase()) {
+        t.case_number = newNo;
+      }
+    });
+    try { localStorage.setItem('case_transfers_backup', JSON.stringify(allCaseTransfers)); } catch(e) {}
+    if (typeof renderRecentTransfersTable === 'function') renderRecentTransfersTable();
+  }
+
+  // 3. Supabase updates on hearings, case_todos and case_transfers
+  if (supabaseClient) {
+    try {
+      await Promise.all([
+        supabaseClient.from('hearings').update({ case_number: newNo }).ilike('case_number', oldNo),
+        supabaseClient.from('case_todos').update({ case_number: newNo }).ilike('case_number', oldNo),
+        supabaseClient.from('case_transfers').update({ case_number: newNo }).ilike('case_number', oldNo)
+      ]);
+      console.log(`[CASCADE] Supabase hearings, case_todos, and case_transfers updated for case number "${oldNo}" -> "${newNo}".`);
+    } catch (err) {
+      console.error('[CASCADE] Supabase error cascading case number change:', err);
+    }
+  }
+
+  // 4. Update UI dropdowns & views
+  if (typeof populateTodoCaseDropdown === 'function') populateTodoCaseDropdown(newNo);
+  if (typeof renderCalendarView === 'function' && typeof currentCalendarMonth !== 'undefined') {
+    renderCalendarView(currentCalendarYear, currentCalendarMonth);
+  }
+}
+if (typeof cascadeUpdateCaseNumber !== 'undefined') window.cascadeUpdateCaseNumber = cascadeUpdateCaseNumber;
+
+// ==============================================================================
+// Courts Supabase Management (Live Sync & Cascading Updates)
+// ==============================================================================
+
+
+function _getLiveCaseRecordsList() {
+  if (typeof window !== 'undefined' && Array.isArray(window.allCaseRecords) && window.allCaseRecords.length > 0) {
+    return window.allCaseRecords;
+  }
+  return Array.isArray(allCaseRecords) ? allCaseRecords : [];
+}
+
+function _getCandidateTablesForCaseType(rawType) {
+  const t = String(rawType || 'civil').trim().toLowerCase();
+  if (t === 'state' || t === 'criminal') return ['statecases', 'criminalcases'];
+  if (t === 'family') return ['familycases', 'civilcases'];
+  if (t === 'revenue') return ['revenuecases', 'civilcases'];
+  if (t === 'misc_civil' || t === 'misccivil') return ['misccivilcases', 'civilcases'];
+  if (t === 'misc_criminal' || t === 'misccriminal') return ['misccriminalcases', 'criminalcases'];
+  if (t === 'complaint') return ['complaintcases', 'criminalcases'];
+  return ['civilcases', 'familycases', 'statecases', 'revenuecases', 'misccivilcases', 'misccriminalcases', 'complaintcases', 'criminalcases'];
+}
+
+async function _updateArchiveStatusInSupabase(target, payload) {
+  const client = (typeof window !== 'undefined' && typeof window.ensureSupabaseClient === 'function')
+    ? window.ensureSupabaseClient()
+    : (supabaseClient || (typeof window !== 'undefined' ? window.supabaseClient : null));
+
+  if (!client) return { localOnly: true };
+
+  const caseNo = String(target.caseNo || target.criminalCaseNumber || target.case_number || '').trim();
+  const tables = _getCandidateTablesForCaseType(target.caseType || target.case_type);
+
+  for (const tbl of tables) {
+    const runUpdate = async (body) => {
+      let q = client.from(tbl).update(body);
+      if (target.id !== undefined && target.id !== null && String(target.id).trim() !== '') {
+        q = q.eq('id', target.id);
+      } else {
+        q = q.ilike('case_number', caseNo);
+      }
+      return await q.select('id, case_status');
+    };
+
+    let res = await runUpdate(payload);
+    if (res.error && (res.error.message || '').toLowerCase().includes('disposal_comment')) {
+      const fallback = { ...payload };
+      delete fallback.disposal_comment;
+      res = await runUpdate(fallback);
+    }
+
+    // If id didn't match (e.g. view/table id mismatch), retry by case_number
+    if ((!res.error) && (!res.data || res.data.length === 0) && caseNo && target.id !== undefined && target.id !== null) {
+      let resByNo = await client.from(tbl).update(payload).ilike('case_number', caseNo).select('id, case_status');
+      if (resByNo.error && (resByNo.error.message || '').toLowerCase().includes('disposal_comment')) {
+        const fallback = { ...payload };
+        delete fallback.disposal_comment;
+        resByNo = await client.from(tbl).update(fallback).ilike('case_number', caseNo).select('id, case_status');
+      }
+      if (!resByNo.error && resByNo.data && resByNo.data.length > 0) {
+        return { updated: true, table: tbl };
+      }
+    }
+
+    if (!res.error && res.data && res.data.length > 0) {
+      return { updated: true, table: tbl };
+    }
+  }
+
+  return { updated: false };
+}
+
+/**
+ * Moves a case into the Archived List (Client Stopped Coming / Advocate Changed)
+ * and persists the status + optional note to Supabase.
+ */
+async function archiveCaseInSupabase(caseNumber, reason = 'client_left', note = '') {
+  const numClean = String(caseNumber || '').trim().toLowerCase();
+  const list = _getLiveCaseRecordsList();
+  const target = list.find(c =>
+    String(c.caseNo || c.criminalCaseNumber || c.case_number || '').trim().toLowerCase() === numClean
+  );
+  if (!target) {
+    throw new Error(`Case ${caseNumber} not found.`);
+  }
+
+  const statusValue = reason === 'advocate_changed' || String(reason).toLowerCase().includes('advocate')
+    ? 'Archived: Advocate Changed'
+    : 'Archived: Client Left';
+
+  const trimmedNote = String(note || '').trim();
+  const payload = {
+    case_status: statusValue,
+    next_hearing: null,
+    disposal_comment: trimmedNote || null,
+    updated_at: new Date().toISOString()
+  };
+
+  const dbRes = await _updateArchiveStatusInSupabase(target, payload);
+  if (dbRes && dbRes.updated === false) {
+    throw new Error(`Could not update case ${caseNumber} in database.`);
+  }
+
+  // Sync in-memory record immediately
+  target.caseStatus = statusValue;
+  target.case_status = statusValue;
+  target.nextHearing = '—';
+  target.next_hearing = null;
+  target.disposalComment = trimmedNote;
+  target.disposal_comment = trimmedNote;
+
+  if (typeof performPostCrudRefresh === 'function') {
+    await performPostCrudRefresh({ caseNumber: target.caseNo || caseNumber });
+  }
+  return target;
+}
+
+/**
+ * Restores an archived case back to active Pending status.
+ */
+async function restoreArchivedCaseInSupabase(caseNumber) {
+  const numClean = String(caseNumber || '').trim().toLowerCase();
+  const list = _getLiveCaseRecordsList();
+  const target = list.find(c =>
+    String(c.caseNo || c.criminalCaseNumber || c.case_number || '').trim().toLowerCase() === numClean
+  );
+  if (!target) {
+    throw new Error(`Case ${caseNumber} not found.`);
+  }
+
+  const payload = {
+    case_status: 'Pending',
+    disposal_comment: null,
+    updated_at: new Date().toISOString()
+  };
+
+  const dbRes = await _updateArchiveStatusInSupabase(target, payload);
+  if (dbRes && dbRes.updated === false) {
+    throw new Error(`Could not restore case ${caseNumber} in database.`);
+  }
+
+  target.caseStatus = 'Pending';
+  target.case_status = 'Pending';
+  target.disposalComment = '';
+  target.disposal_comment = '';
+
+  if (typeof performPostCrudRefresh === 'function') {
+    await performPostCrudRefresh({ caseNumber: target.caseNo || caseNumber });
+  }
+  return target;
+}
+
+// Expose to window
+if (typeof fetchAllDataFromSupabase !== 'undefined') window.fetchAllDataFromSupabase = fetchAllDataFromSupabase;
+if (typeof performPostCrudRefresh !== 'undefined') window.performPostCrudRefresh = performPostCrudRefresh;
+if (typeof checkCaseNumberExists !== 'undefined') window.checkCaseNumberExists = checkCaseNumberExists;
+if (typeof addCaseToSupabase !== 'undefined') window.addCaseToSupabase = addCaseToSupabase;
+if (typeof updateCaseInSupabase !== 'undefined') window.updateCaseInSupabase = updateCaseInSupabase;
+if (typeof deleteCaseFromSupabase !== 'undefined') window.deleteCaseFromSupabase = deleteCaseFromSupabase;
+if (typeof updateCaseTableHearing !== 'undefined') window.updateCaseTableHearing = updateCaseTableHearing;
+if (typeof updateHearingInSupabase !== 'undefined') window.updateHearingInSupabase = updateHearingInSupabase;
+if (typeof correctHearingDateInSupabase !== 'undefined') window.correctHearingDateInSupabase = correctHearingDateInSupabase;
+if (typeof deleteOrRevertHearingInSupabase !== 'undefined') window.deleteOrRevertHearingInSupabase = deleteOrRevertHearingInSupabase;
+if (typeof cascadeUpdateCourtName !== 'undefined') window.cascadeUpdateCourtName = cascadeUpdateCourtName;
+if (typeof cascadeUpdateCaseNumber !== 'undefined') window.cascadeUpdateCaseNumber = cascadeUpdateCaseNumber;
+if (typeof archiveCaseInSupabase !== 'undefined') window.archiveCaseInSupabase = archiveCaseInSupabase;
+if (typeof restoreArchivedCaseInSupabase !== 'undefined') window.restoreArchivedCaseInSupabase = restoreArchivedCaseInSupabase;
+if (typeof getCaseMissingFields !== 'undefined') window.getCaseMissingFields = getCaseMissingFields;
+if (typeof isCaseIncomplete !== 'undefined') window.isCaseIncomplete = isCaseIncomplete;

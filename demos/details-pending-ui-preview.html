@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CaseBook UI Preview — Details Pending (Desktop & Mobile)</title>
+  <link rel="stylesheet" href="../styles/tokens.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: var(--font-sans, 'Inter', 'Nirmala UI', system-ui, sans-serif);
+      background: var(--bg-canvas, #FAF9F6);
+      color: var(--fg-primary, #1C1917);
+      transition: background 0.2s, color 0.2s;
+    }
+    .preview-shell {
+      max-width: 1320px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .preview-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--bg-surface, #fff);
+      border: 1px solid var(--border-subtle, #E7E5E4);
+      border-radius: 12px;
+    }
+    .preview-bar h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .preview-controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .ctrl-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-default, #D6D1C9);
+      background: var(--bg-surface, #fff);
+      color: var(--fg-primary, #1C1917);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .ctrl-btn.active {
+      background: var(--action-bg, #D4A017);
+      color: #fff;
+      border-color: var(--action-bg, #D4A017);
+    }
+    .stage-grid {
+      display: grid;
+      grid-template-columns: 1fr 390px;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 1100px) {
+      .stage-grid { grid-template-columns: 1fr; }
+    }
+    .device-frame {
+      background: var(--bg-surface, #fff);
+      border: 1px solid var(--border-default, #D6D1C9);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    .device-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: var(--bg-subtle, #F5F3EE);
+      border-bottom: 1px solid var(--border-subtle, #E7E5E4);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--fg-secondary, #57534E);
+    }
+    .device-label-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .device-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    /* Details Pending Banner */
+    .pending-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border-default, #D6D1C9);
+      background: var(--bg-subtle, #F5F3EE);
+      transition: all 0.2s ease;
+    }
+    .pending-banner.is-on {
+      background: var(--feedback-warning-soft, #FFF7ED);
+      border-color: var(--feedback-warning, #C2410C);
+    }
+    .pending-left {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .pending-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-surface, #fff);
+      color: var(--fg-secondary, #57534E);
+      border: 1px solid var(--border-subtle, #E7E5E4);
+      flex-shrink: 0;
+    }
+    .pending-banner.is-on .pending-icon {
+      color: var(--feedback-warning, #C2410C);
+      border-color: var(--feedback-warning, #C2410C);
+    }
+    .pending-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin: 0 0 2px 0;
+    }
+    .pending-desc {
+      font-size: 11.5px;
+      color: var(--fg-secondary, #57534E);
+      margin: 0;
+    }
+    .switch-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .switch-track {
+      width: 44px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--border-strong, #A8A29E);
+      position: relative;
+      transition: background 0.2s;
+    }
+    .pending-banner.is-on .switch-track {
+      background: var(--feedback-warning, #C2410C);
+    }
+    .switch-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    }
+    .pending-banner.is-on .switch-thumb {
+      transform: translateX(20px);
+    }
+    /* Form Grid */
+    .form-grid-desktop {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .form-grid-mobile {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .field-box {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .field-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--fg-secondary, #57534E);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+    .req-star { color: var(--feedback-danger, #B91C1C); font-weight: 700; }
+    .opt-pill {
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: var(--feedback-warning-soft, #FFF7ED);
+      color: var(--feedback-warning, #C2410C);
+      display: none;
+    }
+    .mode-on .req-star.can-skip { display: none; }
+    .mode-on .opt-pill { display: inline-block; }
+    .mock-input {
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-default, #D6D1C9);
+      background: var(--bg-surface, #fff);
+      color: var(--fg-primary, #1C1917);
+      font-size: 12px;
+    }
+    .mode-on .mock-input.skippable {
+      border-style: dashed;
+      background: var(--bg-subtle, #F5F3EE);
+    }
+    .submit-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding-top: 4px;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: 8px;
+      border: none;
+      background: var(--action-bg, #D4A017);
+      color: #fff;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    /* All Cases Incomplete Filter Preview */
+    .divider {
+      border-top: 1px dashed var(--border-default, #D6D1C9);
+      margin: 4px 0;
+    }
+    .section-cap {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--fg-secondary, #57534E);
+    }
+    .filter-rail {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .f-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid var(--border-default, #D6D1C9);
+      background: var(--bg-surface, #fff);
+    }
+    .f-chip.warn {
+      background: var(--feedback-warning-soft, #FFF7ED);
+      color: var(--feedback-warning, #C2410C);
+      border-color: var(--feedback-warning, #C2410C);
+    }
+    .case-mini-card {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle, #E7E5E4);
+      background: var(--bg-subtle, #F5F3EE);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .badge-pending {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      background: var(--feedback-warning-soft, #FFF7ED);
+      color: var(--feedback-warning, #C2410C);
+      border: 1px solid var(--feedback-warning, #C2410C);
+    }
+    .btn-complete {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid var(--border-default, #D6D1C9);
+      background: var(--bg-surface, #fff);
+      color: var(--fg-primary, #1C1917);
+      cursor: pointer;
+    }
+    /* Mobile Frame Tweaks */
+    .mobile-frame .pending-banner {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .mobile-frame .switch-wrap {
+      justify-content: space-between;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-subtle, #E7E5E4);
+    }
+    .mobile-frame .btn-primary {
+      width: 100%;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-shell">
+    <div class="preview-bar">
+      <h1>
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
+        CaseBook UI Mockup — "Details Pending" (Desktop &amp; Mobile)
+      </h1>
+      <div class="preview-controls">
+        <button class="ctrl-btn active" id="togglePendingBtn" onclick="togglePendingDemo()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Details Pending: <span id="pendingStateLabel">ON</span>
+        </button>
+        <button class="ctrl-btn" onclick="toggleThemeDemo()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          Toggle Light / Dark
+        </button>
+      </div>
+    </div>
+
+    <div class="stage-grid">
+      <!-- DESKTOP VIEW -->
+      <div class="device-frame mode-on" id="desktopFrame">
+        <div class="device-label">
+          <span class="device-label-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+            Desktop View (1180px)
+          </span>
+          <span>Add Case + All Cases Filter</span>
+        </div>
+        <div class="device-body">
+          <div class="pending-banner is-on" onclick="togglePendingDemo()">
+            <div class="pending-left">
+              <div class="pending-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div>
+                <p class="pending-title">Details Pending (Fill Later)</p>
+                <p class="pending-desc">Turn this ON if Case No., Crime No., Section, or Client Phone is unavailable — save with only <b>Court + Party Names</b>.</p>
+              </div>
+            </div>
+            <div class="switch-wrap">
+              <span style="font-size:11px;font-weight:700;" class="sw-text">ON</span>
+              <div class="switch-track"><div class="switch-thumb"></div></div>
+            </div>
+          </div>
+
+          <div class="form-grid-desktop">
+            <div class="field-box">
+              <div class="field-label"><span>Court / Forum <span class="req-star">*</span></span></div>
+              <div class="mock-input">Family Court Lakhimpur</div>
+            </div>
+            <div class="field-box">
+              <div class="field-label"><span>First Party <span class="req-star">*</span></span></div>
+              <div class="mock-input">साधना उर्फ रानी</div>
+            </div>
+            <div class="field-box">
+              <div class="field-label"><span>Second Party <span class="req-star">*</span></span></div>
+              <div class="mock-input">अंकित अवस्थी</div>
+            </div>
+            <div class="field-box">
+              <div class="field-label"><span>Case Number <span class="req-star can-skip">*</span></span><span class="opt-pill">Pending OK</span></div>
+              <div class="mock-input skippable">Leave blank for now...</div>
+            </div>
+            <div class="field-box">
+              <div class="field-label"><span>Filing Date <span class="req-star can-skip">*</span></span><span class="opt-pill">Pending OK</span></div>
+              <div class="mock-input skippable">Fill later...</div>
+            </div>
+            <div class="field-box">
+              <div class="field-label"><span>Client Number <span class="req-star can-skip">*</span></span><span class="opt-pill">Pending OK</span></div>
+              <div class="mock-input skippable">No dummy 1234567890 needed</div>
+            </div>
+          </div>
+
+          <div class="submit-row">
+            <button class="btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Submit Case Record
+            </button>
+          </div>
+
+          <div class="divider"></div>
+          <div class="section-cap">All Cases Tab — Incomplete Filter Preview</div>
+          <div class="filter-rail">
+            <span class="f-chip">All (71)</span>
+            <span class="f-chip">Pending (71)</span>
+            <span class="f-chip warn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+              Incomplete Details (29)
+            </span>
+          </div>
+          <div class="case-mini-card">
+            <div>
+              <div style="font-weight:700;font-size:12.5px;">State vs Radheshyam &amp; Others <span class="badge-pending">Details Pending</span></div>
+              <div style="font-size:11px;color:var(--fg-secondary);">ACJM-Add. CJ SD | Missing: Case No., Crime No., Section, Phone</div>
+            </div>
+            <button class="btn-complete">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              Complete Details
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOBILE VIEW -->
+      <div class="device-frame mobile-frame mode-on" id="mobileFrame">
+        <div class="device-label">
+          <span class="device-label-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+            Mobile View (375px)
+          </span>
+          <span>Responsive</span>
+        </div>
+        <div class="device-body">
+          <div class="pending-banner is-on" onclick="togglePendingDemo()">
+            <div class="pending-left">
+              <div class="pending-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <div>
+                <p class="pending-title">Details Pending (Fill Later)</p>
+                <p class="pending-desc">Save with only Court + Party Names</p>
+              </div>
+            </div>
+            <div class="switch-wrap">
+              <span style="font-size:11px;font-weight:700;" class="sw-text">Mode: ON</span>
+              <div class="switch-track"><div class="switch-thumb"></div></div>
+            </div>
+          </div>
+
+          <div class="form-grid-mobile">
+            <div class="field-box">
+              <div class="field-label"><span>Court / Forum <span class="req-star">*</span></span></div>
+              <div class="mock-input">Family Court Lakhimpur</div>
+            </div>
+            <div class="field-box">
+              <div class="field-label"><span>First Party <span class="req-star">*</span></span></div>
+              <div class="mock-input">साधना उर्फ रानी</div>
+            </div>
+            <div class="field-box">
+              <div class="field-label"><span>Second Party <span class="req-star">*</span></span></div>
+              <div class="mock-input">अंकित अवस्थी</div>
+            </div>
+            <div class="field-box">
+              <div class="field-label"><span>Case Number <span class="req-star can-skip">*</span></span><span class="opt-pill">Pending OK</span></div>
+              <div class="mock-input skippable">Leave blank for now...</div>
+            </div>
+            <div class="field-box">
+              <div class="field-label"><span>Client Number <span class="req-star can-skip">*</span></span><span class="opt-pill">Pending OK</span></div>
+              <div class="mock-input skippable">No dummy number needed</div>
+            </div>
+          </div>
+
+          <button class="btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Submit Case Record
+          </button>
+
+          <div class="divider"></div>
+          <div class="filter-rail">
+            <span class="f-chip">All (71)</span>
+            <span class="f-chip warn">Incomplete (29)</span>
+          </div>
+          <div class="case-mini-card">
+            <div style="width:100%;">
+              <div style="font-weight:700;font-size:12px;">State vs Radheshyam <span class="badge-pending">Pending</span></div>
+              <div style="font-size:10.5px;color:var(--fg-secondary);margin-top:2px;">Missing: Case No., Crime No., Section</div>
+            </div>
+            <button class="btn-complete" style="width:100%;justify-content:center;">Complete Details</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let isOn = true;
+    function togglePendingDemo() {
+      isOn = !isOn;
+      document.getElementById('pendingStateLabel').textContent = isOn ? 'ON' : 'OFF';
+      document.getElementById('togglePendingBtn').classList.toggle('active', isOn);
+      document.querySelectorAll('.pending-banner').forEach(b => b.classList.toggle('is-on', isOn));
+      document.querySelectorAll('#desktopFrame, #mobileFrame').forEach(f => f.classList.toggle('mode-on', isOn));
+      document.querySelectorAll('.sw-text').forEach((el, idx) => {
+        el.textContent = idx === 0 ? (isOn ? 'ON' : 'OFF') : (isOn ? 'Mode: ON' : 'Mode: OFF');
+      });
+    }
+    function toggleThemeDemo() {
+      const root = document.documentElement;
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+    }
+  </script>
+</body>
+</html>

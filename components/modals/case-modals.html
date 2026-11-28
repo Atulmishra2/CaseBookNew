@@ -1,0 +1,1148 @@
+    <!-- Full Case Details Modal Dialog (Premium Living Dossier) -->
+    <div
+      id="caseDetailsFullModal"
+      class="modal-overlay hidden cdm-dossier-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="caseDetailsModalTitle"
+      onclick="if (event.target === this) closeCaseDetailsFullModal();"
+    >
+      <div class="cdm-dossier-dialog">
+        <div class="modal-drag-indicator" aria-hidden="true"></div>
+        <article class="dossier" id="dossier" data-type="civil">
+          <!-- 1. Header Strip -->
+          <div class="strip">
+            <div class="strip-left">
+              <span class="case-no" id="cdmCaseNo">—</span>
+              <span class="sep">·</span>
+              <span class="matter" id="cdmMatterTitle">—</span>
+              <!-- Test & legacy badges -->
+              <span class="badge shape-split badge-type badge-civil" id="cdmHeaderTypeBadge" style="display: none;">
+                <span class="shape-split-icon"><iconify-icon icon="lucide:scale"></iconify-icon></span>
+                <span class="shape-split-text" id="cdmHeaderTypeText">Civil</span>
+              </span>
+            </div>
+            <div class="strip-right">
+              <span class="status live" id="cdmStatusBadge">
+                <span class="dot"></span>
+                <span id="cdmStatusLabel">Pending</span>
+              </span>
+              <span class="badge shape-split badge-pending" id="cdmHeaderStatusBadge" style="display: none;">
+                <span class="shape-split-icon"><iconify-icon icon="lucide:clock"></iconify-icon></span>
+                <span class="shape-split-text" id="cdmHeaderStatusText">Pending</span>
+              </span>
+              <button type="button" class="strip-close-btn" onclick="closeCaseDetailsFullModal(); if (typeof openCaseDetailTab === 'function') openCaseDetailTab(window.currentSelectedCase);" title="Open in Dedicated Tab">
+                <iconify-icon icon="lucide:maximize-2"></iconify-icon>
+              </button>
+              <button type="button" class="strip-close-btn" onclick="closeCaseDetailsFullModal()" title="Close Dossier (Esc)">
+                <iconify-icon icon="lucide:x"></iconify-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- Hidden elements for test & legacy compatibility -->
+          <div style="display: none;">
+            <div id="caseDetailsModalTitle">—</div>
+            <div id="caseDetailsModalCaseNo">—</div>
+            <div id="caseDetailsModalSubtitle">—</div>
+          </div>
+
+          <!-- 2. Case Dossier Tabs with sliding indicator and badge counts -->
+          <div class="case-tabs" id="caseTabs" role="tablist" aria-label="Case detail sections">
+            <span class="case-tab-indicator" aria-hidden="true"></span>
+            <button class="case-tab active" type="button" role="tab" data-panel="0" aria-selected="true" tabindex="0">
+              <span>Overview</span>
+            </button>
+            <button class="case-tab" type="button" role="tab" data-panel="1" aria-selected="false" tabindex="-1">
+              <span>Court</span>
+            </button>
+            <button class="case-tab" type="button" role="tab" data-panel="2" aria-selected="false" tabindex="-1">
+              <span>Client</span>
+            </button>
+            <button class="case-tab" type="button" role="tab" data-panel="3" aria-selected="false" tabindex="-1">
+              <span>Fees</span>
+              <span class="badge-count" id="cdmFeesBadgeCount">0</span>
+            </button>
+            <button class="case-tab" type="button" role="tab" data-panel="4" aria-selected="false" tabindex="-1">
+              <span>Proceedings</span>
+              <span class="badge-count" id="cdmProceedingsBadgeCount">0</span>
+            </button>
+            <button class="case-tab" type="button" role="tab" data-panel="5" aria-selected="false" tabindex="-1">
+              <span>Notes &amp; Tasks</span>
+              <span class="badge-count" id="cdmTasksBadgeCount">0</span>
+            </button>
+          </div>
+
+          <!-- 3. Scrollable Panels Container -->
+          <div class="case-panels">
+            <!-- PANEL 0: OVERVIEW -->
+            <section class="case-panel active" data-panel="0" role="tabpanel" aria-label="Overview">
+              <div class="masthead">
+                <div class="faceoff">
+                  <div class="party">
+                    <span class="party-role" id="cdmPetitionerRole">PLAINTIFF</span>
+                    <span class="party-name" id="cdmPetitionerName">—</span>
+                  </div>
+                  <span class="vs" aria-hidden="true">v</span>
+                  <div class="party">
+                    <span class="party-role" id="cdmRespondentRole">DEFENDANT</span>
+                    <span class="party-name" id="cdmRespondentName">—</span>
+                  </div>
+                </div>
+                <span class="badge-role" id="cdmAppearingBadge">Appearing for Plaintiff</span>
+              </div>
+
+              <div class="horizon-wrap">
+                <div class="horizon">
+                  <div class="horizon-left">
+                    <div class="eyebrow" id="cdmHearingEyebrow">Next Hearing</div>
+                    <div class="h-row">
+                      <span class="h-date" id="cdmHearingDate">—</span>
+                      <span class="h-chip" id="cdmHearingCountdown">—</span>
+                    </div>
+                  </div>
+                  <div class="horizon-right">
+                    <div class="eyebrow">Current Stage</div>
+                    <div class="h-stage" id="cdmHearingStage">—</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="sec">
+                <h3 class="panel-h">
+                  <iconify-icon icon="lucide:file-text"></iconify-icon>
+                  <span>Case Snapshot</span>
+                </h3>
+                <div class="tbl-wrap">
+                  <table class="tbl tbl-overview tbl-keyvalue">
+                    <thead>
+                      <tr><th>Field</th><th>Detail</th></tr>
+                    </thead>
+                    <tbody id="cdmOverviewSnapshotBody">
+                      <!-- Hydrated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <!-- PANEL 1: COURT & BENCH -->
+            <section class="case-panel" data-panel="1" role="tabpanel" aria-label="Court">
+              <div class="sec">
+                <h3 class="panel-h">
+                  <iconify-icon icon="lucide:landmark"></iconify-icon>
+                  <span>Court &amp; Bench</span>
+                </h3>
+                <div class="tbl-wrap">
+                  <table class="tbl tbl-court tbl-keyvalue">
+                    <thead>
+                      <tr><th>Field</th><th>Detail</th></tr>
+                    </thead>
+                    <tbody id="cdmCourtDetailsBody">
+                      <!-- Hydrated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="sec" id="cdmSpecializedSec">
+                <h3 class="panel-h">
+                  <iconify-icon icon="lucide:folder-open"></iconify-icon>
+                  <span id="cdmSpecializedTitle">Case Particulars</span>
+                </h3>
+                <div class="tbl-wrap">
+                  <table class="tbl tbl-particulars tbl-keyvalue">
+                    <thead>
+                      <tr><th>Field</th><th>Detail</th></tr>
+                    </thead>
+                    <tbody id="cdmSpecializedBody">
+                      <!-- Hydrated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="sec" id="cdmTransferSec">
+                <h3 class="panel-h">
+                  <iconify-icon icon="lucide:arrow-left-right"></iconify-icon>
+                  <span>Court Transfer History</span>
+                  <span class="badge shape-split badge-civil" id="cdmTransferCountBadge">0 Transfers</span>
+                </h3>
+                <div class="tbl-wrap">
+                  <table class="tbl tbl-transfers">
+                    <thead>
+                      <tr><th>Date</th><th>Transfer Route</th><th>Order / Authority</th><th>Reason &amp; Remarks</th></tr>
+                    </thead>
+                    <tbody id="cdmTransferTableBody">
+                      <!-- Hydrated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <!-- PANEL 2: CLIENT -->
+            <section class="case-panel" data-panel="2" role="tabpanel" aria-label="Client">
+              <div class="sec">
+                <div class="client-hero">
+                  <div class="avatar" id="cdmClientAvatar">RS</div>
+                  <div class="client-hero-main">
+                    <div class="client-name" id="cdmClientHeroName">—</div>
+                    <div class="client-phone" id="cdmClientHeroPhone">—</div>
+                  </div>
+                </div>
+              </div>
+              <div class="sec">
+                <h3 class="panel-h">
+                  <iconify-icon icon="lucide:contact"></iconify-icon>
+                  <span>Contact Record</span>
+                </h3>
+                <div class="tbl-wrap">
+                  <table class="tbl tbl-client tbl-keyvalue">
+                    <thead>
+                      <tr><th>Field</th><th>Detail</th></tr>
+                    </thead>
+                    <tbody id="cdmClientContactBody">
+                      <!-- Hydrated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <!-- PANEL 3: FEES -->
+            <section class="case-panel" data-panel="3" role="tabpanel" aria-label="Fees">
+              <div class="sec">
+                <h3 class="panel-h">
+                  <iconify-icon icon="lucide:indian-rupee"></iconify-icon>
+                  <span>Fee Summary</span>
+                </h3>
+                <div class="tbl-wrap">
+                  <table class="tbl tbl-fee-summary tbl-keyvalue">
+                    <thead>
+                      <tr><th>Item</th><th class="num">Amount</th></tr>
+                    </thead>
+                    <tbody id="cdmFeeSummaryBody">
+                      <!-- Hydrated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="sec">
+                <h3 class="panel-h">
+                  <iconify-icon icon="lucide:receipt"></iconify-icon>
+                  <span>Payment Ledger</span>
+                </h3>
+                <div class="tbl-wrap">
+                  <table class="tbl tbl-ledger">
+                    <thead>
+                      <tr><th>Date</th><th>Particulars</th><th>Mode</th><th class="num">Amount</th></tr>
+                    </thead>
+                    <tbody id="cdmFeeLedgerBody">
+                      <!-- Hydrated dynamically -->
+                    </tbody>
+                    <tfoot id="cdmFeeLedgerFoot">
+                      <!-- Hydrated dynamically -->
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <!-- PANEL 4: PROCEEDINGS -->
+            <section class="case-panel" data-panel="4" role="tabpanel" aria-label="Proceedings">
+              <div class="sec">
+                <h3 class="panel-h">
+                  <iconify-icon icon="lucide:scroll-text"></iconify-icon>
+                  <span>Order Sheet &amp; Hearing History</span>
+                </h3>
+                <div class="tbl-wrap">
+                  <table class="tbl tbl-proceedings">
+                    <thead>
+                      <tr><th>Date</th><th>Stage</th><th>Order / Proceeding</th></tr>
+                    </thead>
+                    <tbody id="cdmProceedingsBody">
+                      <!-- Hydrated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <!-- PANEL 5: NOTES & TASKS -->
+            <section class="case-panel" data-panel="5" role="tabpanel" aria-label="Notes &amp; Tasks">
+              <div class="sec" id="cdmTasksSec">
+                <div>
+                  <h3 class="panel-h">
+                    <iconify-icon icon="lucide:check-square"></iconify-icon>
+                    <span>Linked Case Tasks &amp; Deadlines</span>
+                  </h3>
+                  <button type="button" class="footer-btn" onclick="closeCaseDetailsFullModal(); if (typeof openTodoForCase === 'function') openTodoForCase(window.currentSelectedCase?.caseNo || window.currentSelectedCase?.case_number);">
+                    <iconify-icon icon="lucide:plus"></iconify-icon> Add Task
+                  </button>
+                </div>
+                <div class="tbl-wrap">
+                  <table class="tbl tbl-tasks">
+                    <thead>
+                      <tr><th>Deadline</th><th>Task &amp; Details</th><th>Priority</th><th>Status</th></tr>
+                    </thead>
+                    <tbody id="cdmTasksBody">
+                      <!-- Hydrated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="sec" id="cdmNotesSec">
+                <h3 class="panel-h">
+                  <iconify-icon icon="lucide:lock"></iconify-icon>
+                  <span>Latest Order &amp; Private Notes</span>
+                </h3>
+                <div class="tbl-wrap">
+                  <table class="tbl tbl-notes">
+                    <thead>
+                      <tr><th>Type</th><th>Date</th><th>Note</th></tr>
+                    </thead>
+                    <tbody id="cdmNotesBody">
+                      <!-- Hydrated dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- 4. Sticky Docked Footer -->
+          <footer class="dossier-footer">
+            <div class="footer-left">
+              <a class="footer-btn footer-btn-whatsapp" id="cdmFooterWhatsAppBtn" target="_blank" rel="noopener">
+                <iconify-icon icon="lucide:message-circle"></iconify-icon> WhatsApp
+              </a>
+              <a class="footer-btn footer-btn-call" id="cdmFooterCallBtn" href="tel:" style="display: none;">
+                <iconify-icon icon="lucide:phone"></iconify-icon> Call
+              </a>
+              <button type="button" class="footer-btn" id="cdmFooterEditBtn">
+                <iconify-icon icon="lucide:pencil"></iconify-icon> Edit
+              </button>
+            </div>
+            <div class="footer-right">
+              <button type="button" class="footer-btn footer-btn-primary" id="cdmFooterUpdateHearingBtn">
+                <iconify-icon icon="lucide:calendar-clock"></iconify-icon> Update Hearing
+              </button>
+              
+              <div class="dropdown-wrapper">
+                <button type="button" class="footer-btn footer-btn-icon" id="cdmMoreBtn" onclick="event.stopPropagation(); toggleCdmMoreMenu(event)" aria-label="More actions" aria-haspopup="true" aria-expanded="false">
+                  <iconify-icon icon="lucide:more-horizontal"></iconify-icon>
+                </button>
+                
+                <div class="dropdown-menu" id="cdmMoreMenu" role="menu">
+                  <button type="button" class="dropdown-item" id="cdmMenuPrintBtn" role="menuitem">
+                    <iconify-icon icon="lucide:printer"></iconify-icon> Print Case Dossier
+                  </button>
+                  <button type="button" class="dropdown-item" id="cdmMenuTransferBtn" role="menuitem">
+                    <iconify-icon icon="lucide:arrow-left-right"></iconify-icon> Transfer Case
+                  </button>
+                  <div class="dropdown-sep"></div>
+                  <button type="button" class="dropdown-item" id="cdmMenuTodoBtn" role="menuitem">
+                    <iconify-icon icon="lucide:check-square"></iconify-icon> Add To-Do Task
+                  </button>
+                  <button type="button" class="dropdown-item" id="cdmMenuHistoryBtn" role="menuitem">
+                    <iconify-icon icon="lucide:history"></iconify-icon> Hearing History
+                  </button>
+                  <div class="dropdown-sep"></div>
+                  <button type="button" class="dropdown-item" id="cdmMenuArchiveBtn" role="menuitem">
+                    <iconify-icon icon="lucide:archive"></iconify-icon> <span id="cdmMenuArchiveLabel">Move to Archive</span>
+                  </button>
+                </div>
+              </div>
+
+              <button type="button" class="footer-btn" onclick="closeCaseDetailsFullModal()">
+                Close
+              </button>
+            </div>
+          </footer>
+        </article>
+      </div>
+    </div>
+
+    <!-- Case Hearing & Process History Modal Dialog -->
+    <div
+      id="caseHistoryModal"
+      class="modal-overlay hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="historyModalTitle"
+      onclick="if (event.target === this) closeCaseHistoryModal();"
+    >
+      <div class="modal-card modal-container chm-modal-card">
+        <div class="modal-drag-indicator" aria-hidden="true"></div>
+        <!-- 1. Header Bar -->
+        <div class="modal-header">
+          <div class="header-left modal-header-info">
+            <div class="modal-icon-badge">
+              <iconify-icon icon="lucide:history"></iconify-icon>
+            </div>
+            <div class="header-text">
+              <h3 id="historyModalTitle" class="modal-header-title">Case Hearing & Process History</h3>
+            </div>
+          </div>
+
+          <div class="header-actions">
+            <button
+              type="button"
+              id="chmHeaderDossierBtn"
+              class="chm-header-dossier-btn"
+              onclick="printCaseHearingHistory()"
+              title="Print / Save Hearing Dossier"
+            >
+              <iconify-icon icon="lucide:printer"></iconify-icon>
+              <span>Print Dossier</span>
+            </button>
+            <button
+              type="button"
+              id="closeCaseHistoryModalBtn"
+              class="modal-close-btn"
+              aria-label="Close Case History"
+              onclick="closeCaseHistoryModal()"
+              title="Close (Esc)"
+            >
+              <iconify-icon icon="lucide:x"></iconify-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Toolbar & Body (Normal flow with page) -->
+        <div class="modal-body chm-modal-body">
+          <!-- Hero Summary Banner Card -->
+          <div class="chm-hero-card modal-case-summary">
+            <div class="chm-hero-info">
+              <h2 class="chm-hero-title" id="modalCaseTitle">—</h2>
+              <div class="chm-hero-meta-row">
+                <div class="chm-hero-meta-item">
+                  <iconify-icon icon="lucide:hash"></iconify-icon>
+                  <span class="chm-hero-meta-label">Case No:</span>
+                  <strong id="modalCaseNo" class="chm-hero-caseno">—</strong>
+                </div>
+                <span class="chm-meta-divider">•</span>
+                <div class="chm-hero-meta-item">
+                  <iconify-icon icon="lucide:landmark"></iconify-icon>
+                  <span id="modalCourtName" class="chm-hero-court">—</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Next Hearing Highlight Box -->
+            <div class="chm-hero-hearing-highlight">
+              <div class="chm-hearing-highlight-label">
+                <iconify-icon icon="lucide:calendar-check"></iconify-icon>
+                <span>NEXT HEARING</span>
+              </div>
+              <div class="chm-hearing-highlight-value">
+                <span id="modalNextHearingBadge" class="chm-hero-next-date">—</span>
+              </div>
+            </div>
+          </div>
+
+
+          <!-- Timeline Data Table -->
+          <div class="chm-table-container">
+            <table class="chm-history-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Hearing Date</th>
+                  <th>Process / Stage</th>
+                  <th>Court Action & Proceedings</th>
+                </tr>
+              </thead>
+              <tbody id="caseHistoryTableBody">
+                <!-- Injected dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Empty State -->
+          <div id="caseHistoryEmpty" class="case-details-empty chm-empty-state hidden">
+            <div class="chm-empty-icon">
+              <iconify-icon icon="lucide:calendar-x"></iconify-icon>
+            </div>
+            <h4 class="chm-empty-title">No Previous Hearings Recorded</h4>
+            <p class="chm-empty-subtitle">There are no prior hearing appearances or proceedings logged for this case record yet.</p>
+          </div>
+        </div>
+
+        <!-- 4. Modal Footer -->
+        <div class="modal-footer chm-modal-footer">
+          <button
+            type="button"
+            id="modalCloseBtn"
+            class="helper-btn-secondary chm-footer-close-btn"
+            onclick="closeCaseHistoryModal()"
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            id="modalUpdateHearingBtn"
+            class="helper-btn-primary chm-footer-update-btn"
+          >
+            <iconify-icon icon="lucide:calendar-plus"></iconify-icon>
+            <span>Update Next Hearing</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PWA & Mobile Installation Guide Modal -->
+    <div
+      id="pwaGuideModal"
+      class="modal-overlay hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pwaGuideTitle"
+    >
+      <div class="pwa-modal-shell">
+        <div class="modal-drag-indicator" aria-hidden="true"></div>
+        <div class="pwa-modal-header">
+          <h3 id="pwaGuideTitle">Install App &amp; Create Shortcut</h3>
+          <button
+            type="button"
+            class="modal-close-btn"
+            onclick="closePwaGuideModal()"
+            aria-label="Close"
+          >
+            &times;
+          </button>
+        </div>
+        <div class="pwa-modal-body">
+          <div
+            class="pwa-card-section"
+            class="cm-stat-info-box"
+          >
+            <h4
+              class="cm-stat-title"
+            >
+              <iconify-icon icon="lucide:monitor"></iconify-icon> Desktop Install (Windows
+              / Mac / PC)
+            </h4>
+            <ol class="pwa-step-list">
+              <li>
+                Look at your browser's <strong>Address Bar (URL bar)</strong> at
+                the top right.
+              </li>
+              <li>
+                Click the <strong>Install icon (💻 or ➕)</strong> that says
+                <em>"Install CaseBook"</em>.
+              </li>
+              <li>
+                OR click your browser menu
+                <strong>(three dots ⋮ or …)</strong> ➔ Select
+                <strong>"Install CaseBook..."</strong> (or
+                <em>"Save and share"</em> ➔ <em>"Install page as app"</em>).
+              </li>
+              <li>
+                Click <strong>"Install"</strong>. CaseBook will open in its own
+                standalone desktop window and place a shortcut on your Desktop
+                and Taskbar!
+              </li>
+            </ol>
+          </div>
+
+          <div class="pwa-card-section">
+            <h4>🚀 Quick Install (Mobile / Smartphone)</h4>
+            <ol class="pwa-step-list">
+              <li>
+                Tap the <strong>three dots (⋮)</strong> menu in the top right
+                of Chrome.
+              </li>
+              <li>
+                Tap <strong>"Install app"</strong> or
+                <strong>"Add to Home screen"</strong>.
+              </li>
+              <li>
+                Confirm by tapping <strong>"Install"</strong> or
+                <strong>"Add"</strong>.
+              </li>
+            </ol>
+          </div>
+
+          <div class="pwa-card-section">
+            <h4>
+              ⚠️ Shortcut Not Appearing? (Xiaomi / Realme / Oppo / Vivo)
+            </h4>
+            <p>
+              Many Android phone launchers block Chrome from creating shortcuts
+              by default. Follow these steps to fix:
+            </p>
+            <ol class="pwa-step-list">
+              <li>
+                Open phone <strong>Settings ⚙️</strong> ➔
+                <strong>Apps</strong> ➔ <strong>Manage Apps</strong>
+              </li>
+              <li>Find and select <strong>Chrome</strong></li>
+              <li>
+                Tap <strong>Permissions</strong> (or
+                <strong>Other Permissions</strong>)
+              </li>
+              <li>
+                Find <strong>"Home screen shortcuts"</strong> (or "Add
+                shortcuts")
+              </li>
+              <li>Change it to <strong>"Always allow"</strong></li>
+              <li>
+                Ensure phone's <em>"Lock Home screen layout"</em> is turned OFF.
+              </li>
+            </ol>
+          </div>
+
+          <div class="pwa-alert-warning">
+            <strong>Note:</strong> Chrome disables shortcut creation in
+            <em>Incognito tabs</em>. Make sure you are using a standard browser
+            tab.
+          </div>
+        </div>
+        <div
+          class="modal-footer"
+          class="cm-modal-footer-end"
+        >
+          <button
+            type="button"
+            class="primary-btn"
+            onclick="closePwaGuideModal()"
+          >
+            Got It 👍
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Set / Edit Task Reminder Modal -->
+    <div
+      id="caseRemarkModal"
+      class="modal-overlay hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="caseRemarkModalTitle"
+      onclick="if (event.target === this) closeCaseRemarkModal();"
+    >
+      <div class="modal-card modal-card-sm case-remark-modal-box">
+        <div class="modal-drag-indicator" aria-hidden="true"></div>
+        <div class="modal-header">
+          <div class="modal-header-info">
+            <div
+              class="modal-icon"
+              class="cm-accent-icon-blue"
+            >
+              <iconify-icon icon="lucide:layers"></iconify-icon>
+            </div>
+            <div>
+              <h3
+                id="caseRemarkModalTitle"
+                class="cm-modal-title"
+              >
+                Case Remarks &amp; Structured Details
+              </h3>
+              <p
+                class="cm-modal-subtitle"
+                id="caseRemarkModalSubtitle"
+                class="modal-subtitle"
+              >
+                Case: <strong id="caseRemarkModalCaseNo">—</strong>
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="modal-close-btn"
+            onclick="closeCaseRemarkModal()"
+            aria-label="Close"
+            title="Close"
+          >
+            &times;
+          </button>
+        </div>
+        <div
+          class="modal-body"
+        >
+          <div id="caseRemarkModalContent" class="remark-modal-grid">
+            <!-- Populated dynamically with beautified cards -->
+          </div>
+        </div>
+        <div
+          class="modal-footer"
+          class="cm-modal-footer-between"
+        >
+          <div>
+            <button
+              type="button"
+              class="table-view-btn"
+              id="caseRemarkCopyTextBtn"
+              onclick="copyRemarkDataToClipboard('text')"
+              title="Copy Remarks as formatted text"
+            >
+              <iconify-icon icon="lucide:copy"></iconify-icon> Copy Text
+            </button>
+            <button
+              type="button"
+              class="table-view-btn"
+              id="caseRemarkCopyJsonBtn"
+              onclick="copyRemarkDataToClipboard('json')"
+              title="Copy raw remarks JSON"
+            >
+              <iconify-icon icon="lucide:code"></iconify-icon> Copy JSON
+            </button>
+          </div>
+          <button
+            type="button"
+            class="primary-btn"
+            onclick="closeCaseRemarkModal()"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         FORWARD DATE MODAL (with Refined Custom Date Picker)
+         ============================================================ -->
+    <div
+      class="fd-modal-overlay modal-overlay hidden"
+      id="fdModal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="fdModalTitle"
+    >
+      <div class="fd-modal">
+        <div class="modal-drag-indicator" aria-hidden="true"></div>
+        <!-- Header -->
+        <div class="fd-modal-header">
+          <div class="fd-mh-left">
+            <div class="fd-mh-icon">
+              <iconify-icon icon="lucide:calendar-days"></iconify-icon>
+            </div>
+            <div class="fd-mh-text">
+              <div class="fd-mh-title" id="fdModalTitle">Forward Date</div>
+              <div class="fd-mh-sub" id="fdModalSub">Select a case to begin</div>
+            </div>
+          </div>
+          <button type="button" class="fd-modal-close" onclick="closeForwardDateModal()" aria-label="Close modal">
+            <iconify-icon icon="lucide:x"></iconify-icon>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="fd-modal-body">
+          <!-- SECTION 1 — Select Case -->
+          <div class="fd-section">
+            <div class="fd-section-head">
+              <div class="fd-section-num">1</div>
+              <div>
+                <div class="fd-section-title">Select Case</div>
+                <div class="fd-section-desc">Search by case number or name. Undated cases appear first.</div>
+              </div>
+            </div>
+
+            <div class="fd-combo-wrap" id="fdCaseCombo">
+              <button type="button" class="fd-combo-input-wrap" id="fdComboInputWrap" onclick="toggleForwardCombo(event)" onkeydown="handleForwardComboKeydown(event)" aria-haspopup="listbox" aria-expanded="false" aria-controls="fdComboOptions" aria-label="Select case">
+                <span class="fd-combo-label" id="fdComboLabel">Select a case...</span>
+                <iconify-icon icon="lucide:chevron-down" class="fd-combo-chevron" aria-hidden="true"></iconify-icon>
+              </button>
+              <div class="fd-combo-dropdown" id="fdComboDropdown">
+                <div class="fd-combo-search-wrap">
+                  <iconify-icon icon="lucide:search" class="fd-lead-icon" aria-hidden="true"></iconify-icon>
+                  <input type="text" class="fd-combo-input" id="fdComboInput" aria-label="Search cases" autocomplete="off" placeholder="Search case number or name..." oninput="onForwardComboInput(this.value)" onkeydown="handleForwardComboKeydown(event)" />
+                </div>
+                <div class="fd-combo-options" id="fdComboOptions" role="listbox" aria-label="Cases"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 2 — Case Detail Card -->
+          <div class="fd-section" id="fdCaseDetailSection" style="display: none;">
+            <div class="fd-section-head">
+              <div class="fd-section-num">2</div>
+              <div>
+                <div class="fd-section-title">Case Details</div>
+                <div class="fd-section-desc">Verify the selected case before forwarding.</div>
+              </div>
+            </div>
+
+            <div class="fd-case-detail-card">
+              <div class="fd-cdc-header">
+                <iconify-icon icon="lucide:folder-open"></iconify-icon>
+                <span>Case Information</span>
+              </div>
+              <div class="fd-cdc-body">
+                <div class="fd-cdc-item full">
+                  <span class="fd-cdc-label">Case Name</span>
+                  <div class="fd-cdc-value" id="fdCdcCaseName">—</div>
+                </div>
+                <div class="fd-cdc-item">
+                  <span class="fd-cdc-label">Case Number</span>
+                  <div class="fd-cdc-value" id="fdCdcCaseNo">—</div>
+                </div>
+                <div class="fd-cdc-item">
+                  <span class="fd-cdc-label">Case Type</span>
+                  <div class="fd-cdc-value" id="fdCdcCaseType">—</div>
+                </div>
+                <div class="fd-cdc-item full">
+                  <span class="fd-cdc-label">Court / Forum</span>
+                  <div class="fd-cdc-value" id="fdCdcCourt">—</div>
+                </div>
+                <div class="fd-cdc-item">
+                  <span class="fd-cdc-label">Filing Date</span>
+                  <div class="fd-cdc-value" id="fdCdcFilingDate">—</div>
+                </div>
+                <div class="fd-cdc-item">
+                  <span class="fd-cdc-label">Client Name</span>
+                  <div class="fd-cdc-value" id="fdCdcClientName">—</div>
+                </div>
+                <div class="fd-cdc-item">
+                  <span class="fd-cdc-label">We Represent</span>
+                  <div class="fd-cdc-value highlight" id="fdCdcClientRole">—</div>
+                </div>
+                <div class="fd-cdc-item">
+                  <span class="fd-cdc-label">Previous Date</span>
+                  <div class="fd-cdc-value" id="fdCdcPrevDate">—</div>
+                </div>
+                <div class="fd-cdc-item full">
+                  <span class="fd-cdc-label">Previous Case Stage</span>
+                  <div class="fd-cdc-value" id="fdCdcPrevStage">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 3 — Refined Calendar + Next Date Card (Side-by-side) -->
+          <div class="fd-section" id="fdNewDateSection">
+            <div id="fdCorrectionModeBar" class="fd-correction-bar" style="display: none; margin-bottom: 12px; padding: 10px 14px; border-radius: 10px; background: var(--feedback-warning-soft, rgba(245, 158, 11, 0.12)); border: 1px solid var(--feedback-warning, #f59e0b); align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fg-primary, inherit);">
+                <iconify-icon icon="lucide:alert-circle" style="color: var(--feedback-warning, #d97706); flex-shrink: 0;"></iconify-icon>
+                <span id="fdCorrectionModeText">Already scheduled for a future date.</span>
+              </div>
+              <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap;">
+                <input type="checkbox" id="fdCorrectionModeToggle" onchange="onForwardCorrectionModeToggle(this.checked)">
+                <span>Fix / Replace Mistaken Date</span>
+              </label>
+            </div>
+            <div class="fd-section-head">
+              <div class="fd-section-num">3</div>
+              <div>
+                <div class="fd-section-title">New Hearing Date</div>
+                <div class="fd-section-desc">One-tap presets or pick a date — summary updates instantly.</div>
+              </div>
+            </div>
+
+            <!-- One-Tap Preset Chips -->
+            <div class="fd-preset-chips">
+              <button type="button" class="fd-preset-chip" onclick="setForwardDatePreset(7)">
+                <iconify-icon icon="lucide:zap"></iconify-icon> +1 Week
+              </button>
+              <button type="button" class="fd-preset-chip" onclick="setForwardDatePreset(14)">
+                <iconify-icon icon="lucide:zap"></iconify-icon> +2 Weeks
+              </button>
+              <button type="button" class="fd-preset-chip" onclick="setForwardDatePreset(21)">
+                <iconify-icon icon="lucide:zap"></iconify-icon> +3 Weeks
+              </button>
+              <button type="button" class="fd-preset-chip" onclick="setForwardDatePreset(30)">
+                <iconify-icon icon="lucide:calendar"></iconify-icon> +1 Month
+              </button>
+              <button type="button" class="fd-preset-chip" onclick="setForwardDatePreset(60)">
+                <iconify-icon icon="lucide:calendar"></iconify-icon> +2 Months
+              </button>
+              <button type="button" class="fd-preset-chip" onclick="setForwardDatePreset(1)">
+                <iconify-icon icon="lucide:flame"></iconify-icon> Tomorrow
+              </button>
+              <button type="button" class="fd-preset-chip" onclick="setForwardDatePreset(0)">
+                <iconify-icon icon="lucide:flame"></iconify-icon> Today
+              </button>
+            </div>
+
+            <div class="fd-date-row">
+              <!-- LEFT: Refined Custom Date Picker -->
+              <div class="fd-calendar-wrap">
+                <div class="fd-cal-header">
+                  <div class="fd-cal-nav">
+                    <button type="button" class="fd-cal-nav-btn" onclick="calPrevYear()" title="Previous year" aria-label="Previous year">
+                      <iconify-icon icon="lucide:chevrons-left"></iconify-icon>
+                    </button>
+                    <button type="button" class="fd-cal-nav-btn" onclick="calPrevMonth()" title="Previous month" aria-label="Previous month">
+                      <iconify-icon icon="lucide:chevron-left"></iconify-icon>
+                    </button>
+                  </div>
+
+                  <div class="fd-cal-title" id="fdCalTitle">Month YYYY</div>
+
+                  <div class="fd-cal-nav">
+                    <button type="button" class="fd-cal-nav-btn" onclick="calNextMonth()" title="Next month" aria-label="Next month">
+                      <iconify-icon icon="lucide:chevron-right"></iconify-icon>
+                    </button>
+                    <button type="button" class="fd-cal-nav-btn" onclick="calNextYear()" title="Next year" aria-label="Next year">
+                      <iconify-icon icon="lucide:chevrons-right"></iconify-icon>
+                    </button>
+                    <button type="button" class="fd-cal-today-btn" onclick="calToday()">Today</button>
+                  </div>
+                </div>
+
+                <div class="fd-cal-weekdays">
+                  <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                </div>
+
+                <div class="fd-cal-days" id="fdCalDays"></div>
+
+                <div class="fd-cal-footer">
+                  <div class="fd-cal-selected-pill">
+                    <iconify-icon icon="lucide:calendar"></iconify-icon>
+                    <span id="fdCalSelectedText">none</span>
+                  </div>
+                  <button type="button" class="fd-cal-clear-btn" onclick="calClear()">Clear</button>
+                </div>
+
+                <!-- Sunday / Non-working Day Alert -->
+                <div id="fdSundayAlert" class="fd-sunday-alert" style="display: none;">
+                  <iconify-icon icon="lucide:alert-triangle" class="cm-icon-danger"></iconify-icon>
+                  <span><strong>Warning:</strong> Selected date falls on a <strong>Sunday</strong> (Courts closed). Please verify if it is an urgent duty remand day or select a regular working day.</span>
+                </div>
+              </div>
+
+              <!-- RIGHT: Next Date Card -->
+              <div class="fd-next-date-card">
+                <div class="fd-ndc-header">
+                  <iconify-icon icon="lucide:calendar-check"></iconify-icon>
+                  <span>Forwarded Next</span>
+                </div>
+                <div class="fd-ndc-body">
+                  <div class="fd-ndc-item">
+                    <span class="fd-ndc-label">Next Date</span>
+                    <div class="fd-ndc-value placeholder" id="fdNdcNextDate">Select a date</div>
+                  </div>
+                  <div class="fd-ndc-item">
+                    <span class="fd-ndc-label">Day</span>
+                    <div class="fd-ndc-value placeholder" id="fdNdcNextDay">—</div>
+                  </div>
+                  <div class="fd-ndc-item">
+                    <span class="fd-ndc-label">Interval</span>
+                    <div class="fd-ndc-value placeholder" id="fdNdcInterval">—</div>
+                  </div>
+                  <div class="fd-ndc-item">
+                    <span class="fd-ndc-label">Next Case Stage <span class="fd-required-star">*</span></span>
+
+                    <!-- Dynamic Suggested Next Stage Pill -->
+                    <div id="fdStageRecWrap" class="fd-stage-rec-wrap" style="display: none;">
+                      <span class="fd-stage-rec-label"><iconify-icon icon="lucide:sparkles" class="cm-icon-amber"></iconify-icon> Suggested:</span>
+                      <button type="button" id="fdStageRecBtn" class="fd-stage-rec-pill" onclick="applyForwardModalRecStage()">
+                        <span id="fdStageRecText">Evidence</span>
+                        <iconify-icon icon="lucide:arrow-right"></iconify-icon>
+                      </button>
+                    </div>
+
+                    <!-- 1-Tap Quick Stage Chips -->
+                    <div class="fd-quick-stage-pills" id="fdQuickStagePills">
+                      <button type="button" class="fd-stage-pill" onclick="quickSelectForwardStage('Evidence')">Evidence</button>
+                      <button type="button" class="fd-stage-pill" onclick="quickSelectForwardStage('Arguments')">Arguments</button>
+                      <button type="button" class="fd-stage-pill" onclick="quickSelectForwardStage('Bail Hearing')">Bail</button>
+                      <button type="button" class="fd-stage-pill" onclick="quickSelectForwardStage('Framing of Issues')">Framing</button>
+                      <button type="button" class="fd-stage-pill" onclick="quickSelectForwardStage('Cross Examination')">Cross</button>
+                      <button type="button" class="fd-stage-pill" onclick="quickSelectForwardStage('Final Order')">Final Order</button>
+                    </div>
+
+                    <select id="fdStageSelect" class="fd-select" onchange="onForwardStageChange(this.value)">
+                      <option value="" disabled selected>-- Select Stage --</option>
+                      <option value="Pre-summoning Evidence">Pre-summoning Evidence</option>
+                      <option value="Summoning Order">Summoning Order (समन आदेश)</option>
+                      <option value="Bail Hearing">Bail Hearing (ज़मानत)</option>
+                      <option value="Plea in Absence">Plea in Absence</option>
+                      <option value="Final Order">Final Order (फैसला)</option>
+                      <option value="Arguments">Arguments (बहस)</option>
+                      <option value="Evidence">Evidence (साक्ष्य)</option>
+                      <option value="Notice">Notice (समन)</option>
+                      <option value="Framing of Issues">Framing of Issues (तनकीहात)</option>
+                      <option value="Cross Examination">Cross Examination (जिरह)</option>
+                      <option value="Compliance">Compliance (अनुपालन)</option>
+                      <option value="Adjourned">Adjourned (स्थगित)</option>
+                      <option value="Order Reserved">Order Reserved (आदेश आरक्षित)</option>
+                      <option value="Other">Other (अन्य)</option>
+                    </select>
+                    <div id="fdCustomStageWrap" style="display: none;">
+                      <input type="text" id="fdCustomStageInput" class="fd-input" placeholder="Type custom stage/order here..." />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 4 — Proceedings & Order Notes -->
+          <div class="fd-section" id="fdNotesSection">
+            <div class="fd-section-head">
+              <div class="fd-section-num">4</div>
+              <div>
+                <div class="fd-section-title">
+                  Proceedings &amp; Order Notes
+                  <span>(Optional)</span>
+                </div>
+                <div class="fd-section-desc">Court order summary, bench remarks, or next action items.</div>
+              </div>
+            </div>
+
+            <!-- Quick Order Snippets (1-tap insertion) -->
+            <div class="fd-snippets-bar">
+              <span class="fd-snippets-title">
+                <iconify-icon icon="lucide:zap" class="cm-icon-amber"></iconify-icon> 1-Tap Order Snippets:
+              </span>
+              <div class="fd-snippets-list">
+                <button type="button" class="fd-snippet-chip" onclick="appendForwardSnippet('WS / Counter affidavit filed. Listed for rejoinder.')">WS Filed</button>
+                <button type="button" class="fd-snippet-chip" onclick="appendForwardSnippet('Adjourned on request of counsel.')">Adjourned</button>
+                <button type="button" class="fd-snippet-chip" onclick="appendForwardSnippet('Plaintiff evidence recorded. Listed for cross-examination.')">Evidence Recorded</button>
+                <button type="button" class="fd-snippet-chip" onclick="appendForwardSnippet('Cross-examination completed. Listed for next evidence.')">Cross Exam</button>
+                <button type="button" class="fd-snippet-chip" onclick="appendForwardSnippet('Arguments heard in part. Matter adjourned.')">Arguments Heard</button>
+                <button type="button" class="fd-snippet-chip" onclick="appendForwardSnippet('Presiding officer on leave. Matter re-notified.')">Judge on Leave</button>
+                <button type="button" class="fd-snippet-chip" onclick="appendForwardSnippet('Final arguments concluded. Reserved for judgment.')">Reserved Order</button>
+              </div>
+            </div>
+
+            <label class="fd-cdc-label" for="fdProceedingsNote">Action Taken / Court Order Summary</label>
+            <textarea
+              class="fd-textarea"
+              id="fdProceedingsNote"
+              placeholder="e.g. Defendant filed written statement. Court granted 2 weeks for counter affidavit..."
+            ></textarea>
+
+            <!-- Engagement Readiness Clear Toggle (Shown when case is Not Bail Out / Not Appeared) -->
+            <div class="fd-disposal-box" id="fdClearEngagementWrap" style="display: none; margin-bottom: 10px;">
+              <label class="fd-disposal-label">
+                <input type="checkbox" id="fdClearEngagementToggle" class="fd-disposal-checkbox">
+                <span id="fdClearEngagementLabel">Mark Bail Granted / Appeared (Move to Pending)</span>
+              </label>
+            </div>
+
+            <!-- Case Disposal Terminal Toggle -->
+            <div class="fd-disposal-box">
+              <label class="fd-disposal-label">
+                <input type="checkbox" id="fdDisposedToggle" onchange="toggleForwardModalDisposal(this.checked)" class="fd-disposal-checkbox">
+                <span>Mark Case as Disposed / Decided</span>
+              </label>
+            </div>
+
+            <!-- Interactive Success & WhatsApp Confirmation Card -->
+            <div id="fdSuccessCard" class="fd-success-card" style="display: none;">
+              <div class="fd-sc-banner">
+                <div class="fd-sc-icon"><iconify-icon icon="lucide:check-circle-2"></iconify-icon></div>
+                <div class="fd-sc-text">
+                  <h4 id="fdSuccessTitle">Hearing Forwarded Successfully!</h4>
+                  <p id="fdSuccessDetails">Next hearing date scheduled and synchronized.</p>
+                </div>
+              </div>
+              <div class="fd-sc-actions">
+                <button type="button" class="fd-sc-whatsapp-btn" onclick="sendForwardWhatsAppNotice()">
+                  <iconify-icon icon="lucide:message-circle"></iconify-icon>
+                  <span id="fdSuccessWaBtnText">Send WhatsApp Notice</span>
+                </button>
+                <button type="button" class="fd-sc-another-btn" id="fdSuccessFixBtn" onclick="fixLastForwardInModal()">
+                  <iconify-icon icon="lucide:pencil"></iconify-icon> Wrong Date? Fix
+                </button>
+                <button type="button" class="fd-sc-another-btn" id="fdSuccessUndoBtn" onclick="undoLastForwardInModal()">
+                  <iconify-icon icon="lucide:undo-2"></iconify-icon> Undo
+                </button>
+                <button type="button" class="fd-sc-another-btn" onclick="forwardAnotherCaseInModal()">
+                  <iconify-icon icon="lucide:refresh-cw"></iconify-icon> Forward Another Case
+                </button>
+                <button type="button" class="fd-sc-done-btn" onclick="closeForwardDateModal()">
+                  <iconify-icon icon="lucide:check"></iconify-icon> Done
+                </button>
+              </div>
+            </div>
+
+            <!-- Direct WhatsApp Notification Option -->
+            <div id="fdWhatsAppBar" class="fd-whatsapp-bar" style="display: none;">
+              <div>
+                <iconify-icon icon="lucide:message-circle" class="cm-icon-whatsapp"></iconify-icon>
+                <div>
+                  <div class="fd-wa-title" id="fdWaClientName">Send WhatsApp Notice</div>
+                  <div class="fd-wa-subtitle" id="fdWaClientPhone">Direct Court Reminder</div>
+                </div>
+              </div>
+              <button type="button" class="fd-whatsapp-btn" onclick="sendForwardWhatsAppNotice()">
+                <iconify-icon icon="lucide:send"></iconify-icon> Notify Client
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="fd-modal-footer">
+          <button type="button" class="fd-btn-secondary" onclick="closeForwardDateModal()">
+            <iconify-icon icon="lucide:x"></iconify-icon> Cancel
+          </button>
+          <button type="button" class="fd-btn-primary" id="fdSubmitBtn" onclick="submitForwardDateModal()">
+            <iconify-icon icon="lucide:send"></iconify-icon>
+            <span id="fdSubmitBtnText">Forward Date</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Archive Case Modal (Client Stopped Coming / Advocate Changed) -->
+    <div
+      id="archiveCaseModal"
+      class="modal-overlay hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="archiveModalTitle"
+      onclick="if (event.target === this) closeArchiveCaseModal();"
+    >
+      <div class="modal-card modal-container archive-modal-card">
+        <div class="modal-drag-indicator" aria-hidden="true"></div>
+        <div class="archive-modal-header">
+          <div class="archive-modal-header-left">
+            <span class="archive-modal-crest" aria-hidden="true">
+              <iconify-icon icon="lucide:archive"></iconify-icon>
+            </span>
+            <div class="archive-modal-header-text">
+              <h2 id="archiveModalTitle" class="archive-modal-title">Move Case to Archive</h2>
+              <p id="archiveModalCaseSubtitle" class="archive-modal-subtitle">Select reason for archiving</p>
+            </div>
+          </div>
+          <button type="button" class="strip-close-btn" onclick="closeArchiveCaseModal()" title="Close (Esc)" aria-label="Close">
+            <iconify-icon icon="lucide:x"></iconify-icon>
+          </button>
+        </div>
+        <div class="archive-modal-body">
+          <input type="hidden" id="archiveModalCaseNo" value="" />
+          <div>
+            <span class="archive-field-label">Archive Reason</span>
+            <div class="archive-reason-group" role="radiogroup" aria-label="Archive Reason">
+              <label class="archive-reason-card is-selected" data-archive-reason="client_left">
+                <input type="radio" name="archiveReasonRadio" value="client_left" checked onchange="syncArchiveReasonCards(this)" />
+                <span class="archive-radio-indicator" aria-hidden="true"></span>
+                <div>
+                  <div class="archive-reason-title">Client Stopped Coming</div>
+                  <div class="archive-reason-desc">Client is no longer appearing or responding</div>
+                </div>
+              </label>
+              <label class="archive-reason-card" data-archive-reason="advocate_changed">
+                <input type="radio" name="archiveReasonRadio" value="advocate_changed" onchange="syncArchiveReasonCards(this)" />
+                <span class="archive-radio-indicator" aria-hidden="true"></span>
+                <div>
+                  <div class="archive-reason-title">Advocate Changed</div>
+                  <div class="archive-reason-desc">Client engaged another counsel / brief taken back</div>
+                </div>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label for="archiveModalNote" class="archive-field-label">Optional Note</label>
+            <textarea id="archiveModalNote" rows="3" class="archive-note-textarea" placeholder="e.g. Client stopped coming after last hearing / NOC issued..."></textarea>
+          </div>
+        </div>
+        <div class="archive-modal-footer">
+          <button type="button" class="fd-btn-secondary" onclick="closeArchiveCaseModal()">
+            <iconify-icon icon="lucide:x"></iconify-icon> Cancel
+          </button>
+          <button type="button" class="fd-btn-primary" id="archiveModalConfirmBtn" onclick="confirmArchiveCaseModal()">
+            <iconify-icon icon="lucide:archive"></iconify-icon>
+            <span id="archiveModalConfirmText">Move to Archive</span>
+          </button>
+        </div>
+      </div>
+    </div>
+

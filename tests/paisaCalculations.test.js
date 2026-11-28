@@ -1,0 +1,857 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import '../utils/dateUtils.js';
+import '../admin.js';
+import '../components/tabs/home/tab-home.js';
+import '../components/tabs/paisa/tab-paisa.js';
+
+describe('components/tabs/paisa/tab-paisa.js - Currency & Amount Formatting', () => {
+  it('formatPaisaAmount should format numbers with Indian comma grouping and rounding', () => {
+    expect(window.formatPaisaAmount).toBeDefined();
+
+    expect(window.formatPaisaAmount(0)).toBe('0');
+    expect(window.formatPaisaAmount(1000)).toBe('1,000');
+    expect(window.formatPaisaAmount(100000)).toBe('1,00,000');
+    expect(window.formatPaisaAmount(1250000)).toBe('12,50,000');
+
+    // Rounding floats
+    expect(window.formatPaisaAmount(999.4)).toBe('999');
+    expect(window.formatPaisaAmount(999.6)).toBe('1,000');
+
+    // Null and invalid inputs
+    expect(window.formatPaisaAmount(null)).toBe('0');
+    expect(window.formatPaisaAmount(undefined)).toBe('0');
+    expect(window.formatPaisaAmount('invalid')).toBe('0');
+  });
+});
+
+describe('components/tabs/paisa/tab-paisa.js - Vendor Rates & Ticket Calculations', () => {
+  beforeEach(() => {
+    window.safeStorage.remove('paisa_vendors');
+  });
+
+  it('getPaisaVendors should load default Ajay and Zameer rates', () => {
+    expect(window.getPaisaVendors).toBeDefined();
+    const vendors = window.getPaisaVendors();
+    expect(vendors.ajay).toBeDefined();
+    expect(vendors.ajay.rate).toBe(11);
+    expect(vendors.zameer).toBeDefined();
+    expect(vendors.zameer.rate).toBe(12);
+  });
+
+  it('savePaisaVendors should persist updated rates to safeStorage', () => {
+    const updated = {
+      ajay: { name: 'Ajay', rate: 15 },
+      zameer: { name: 'Zameer', rate: 16 }
+    };
+    window.savePaisaVendors(updated);
+
+    const reloaded = window.getPaisaVendors();
+    expect(reloaded.ajay.rate).toBe(15);
+    expect(reloaded.zameer.rate).toBe(16);
+  });
+
+  it('getTicketUnitPrice should accurately return unit price based on face value rules', () => {
+    expect(window.getTicketUnitPrice).toBeDefined();
+
+    // Standard preset face values
+    expect(window.getTicketUnitPrice(1)).toBe(1.25);
+    expect(window.getTicketUnitPrice(2)).toBe(2.50);
+    expect(window.getTicketUnitPrice(5)).toBe(6.00);
+    expect(window.getTicketUnitPrice(10)).toBe(12.00);
+    expect(window.getTicketUnitPrice(20)).toBe(30.00);
+    expect(window.getTicketUnitPrice(50)).toBe(70.00);
+    expect(window.getTicketUnitPrice(100)).toBe(120.00);
+
+    // Range from 200 to 1000 (+20 for each)
+    expect(window.getTicketUnitPrice(200)).toBe(220.00);
+    expect(window.getTicketUnitPrice(300)).toBe(320.00);
+    expect(window.getTicketUnitPrice(500)).toBe(520.00);
+    expect(window.getTicketUnitPrice(1000)).toBe(1020.00);
+  });
+
+  it('calculatePaisaTicketTotal should compute final price = price * qty based on face value', () => {
+    document.body.innerHTML = `
+      <select id="paisaTicketValue">
+        <option value="1">₹1</option>
+        <option value="2">₹2</option>
+        <option value="5">₹5</option>
+        <option value="10" selected>₹10</option>
+        <option value="20">₹20</option>
+        <option value="50">₹50</option>
+        <option value="100">₹100</option>
+        <option value="200">₹200</option>
+        <option value="500">₹500</option>
+        <option value="1000">₹1000</option>
+      </select>
+      <input id="paisaCustomFaceValue" value="" />
+      <input id="paisaTicketQty" value="1" />
+      <span id="paisaVendorRateHint"></span>
+      <span id="paisaCalcSummaryRate"></span>
+      <span id="paisaCalcSummaryTotal"></span>
+      <input id="paisaSpendAmount" value="" />
+      <input id="paisaSpendPayeeName" value="" />
+    `;
+
+    // 1. Face Value 1: Price 1.25 * 1 = 1.25
+    document.getElementById('paisaTicketValue').value = '1';
+    document.getElementById('paisaTicketQty').value = '1';
+    window.calculatePaisaTicketTotal();
+    expect(document.getElementById('paisaSpendAmount').value).toBe('1.25');
+
+    // 2. Face Value 2: Price 2.50 * 1 = 2.50
+    document.getElementById('paisaTicketValue').value = '2';
+    document.getElementById('paisaTicketQty').value = '1';
+    window.calculatePaisaTicketTotal();
+    expect(document.getElementById('paisaSpendAmount').value).toBe('2.50');
+
+    // 3. Face Value 5: Price 6.00 * 1 = 6
+    document.getElementById('paisaTicketValue').value = '5';
+    document.getElementById('paisaTicketQty').value = '1';
+    window.calculatePaisaTicketTotal();
+    expect(document.getElementById('paisaSpendAmount').value).toBe('6');
+
+    // 4. Face Value 10: Price 12.00 * 1 = 12
+    document.getElementById('paisaTicketValue').value = '10';
+    document.getElementById('paisaTicketQty').value = '1';
+    window.calculatePaisaTicketTotal();
+    expect(document.getElementById('paisaSpendAmount').value).toBe('12');
+
+    // 5. Face Value 20: Price 30.00 * 1 = 30
+    document.getElementById('paisaTicketValue').value = '20';
+    document.getElementById('paisaTicketQty').value = '1';
+    window.calculatePaisaTicketTotal();
+    expect(document.getElementById('paisaSpendAmount').value).toBe('30');
+
+    // 6. Face Value 50: Price 70.00 * 1 = 70
+    document.getElementById('paisaTicketValue').value = '50';
+    document.getElementById('paisaTicketQty').value = '1';
+    window.calculatePaisaTicketTotal();
+    expect(document.getElementById('paisaSpendAmount').value).toBe('70');
+
+    // 7. Face Value 100: Price 120.00 * 1 = 120
+    document.getElementById('paisaTicketValue').value = '100';
+    document.getElementById('paisaTicketQty').value = '1';
+    window.calculatePaisaTicketTotal();
+    expect(document.getElementById('paisaSpendAmount').value).toBe('120');
+
+    // 8. Range 200 to 1000 (+20 for each): Face Value 200 -> Price 220 * 1 = 220
+    document.getElementById('paisaTicketValue').value = '200';
+    document.getElementById('paisaTicketQty').value = '1';
+    window.calculatePaisaTicketTotal();
+    expect(document.getElementById('paisaSpendAmount').value).toBe('220');
+
+    // Face Value 500: Price 520 * 2 = 1040
+    document.getElementById('paisaTicketValue').value = '500';
+    document.getElementById('paisaTicketQty').value = '2';
+    window.calculatePaisaTicketTotal();
+    expect(document.getElementById('paisaSpendAmount').value).toBe('1040');
+
+    // Face Value 1000: Price 1020 * 1 = 1020
+    document.getElementById('paisaTicketValue').value = '1000';
+    document.getElementById('paisaTicketQty').value = '1';
+    window.calculatePaisaTicketTotal();
+    expect(document.getElementById('paisaSpendAmount').value).toBe('1020');
+
+    // Custom Face Value in 200-1000 range: e.g. 350 -> Price 370 * 2 = 740
+    document.getElementById('paisaCustomFaceValue').value = '350';
+    document.getElementById('paisaTicketQty').value = '2';
+    window.calculatePaisaTicketTotal();
+    expect(document.getElementById('paisaSpendAmount').value).toBe('740');
+  });
+
+  it('calculatePaisaTicketTotal should fallback gracefully when only vendor select is present', () => {
+    document.body.innerHTML = `
+      <select id="paisaTicketVendor">
+        <option value="ajay" selected>Ajay (₹11)</option>
+        <option value="zameer">Zameer (₹12)</option>
+      </select>
+      <input id="paisaTicketQty" value="10" />
+      <span id="paisaVendorRateHint"></span>
+      <input id="paisaSpendAmount" value="" />
+    `;
+
+    window.calculatePaisaTicketTotal();
+
+    const amtInput = document.getElementById('paisaSpendAmount');
+    // 10 qty * ₹11 (Ajay) = ₹110
+    expect(amtInput.value).toBe('110');
+
+    // Change to Zameer: 5 qty * ₹12 = ₹60
+    document.getElementById('paisaTicketVendor').value = 'zameer';
+    document.getElementById('paisaTicketQty').value = '5';
+    window.calculatePaisaTicketTotal();
+
+    expect(amtInput.value).toBe('60');
+  });
+
+  it('setPaisaReceivedCategory should update hidden input and toggle active category chip', () => {
+    document.body.innerHTML = `
+      <div id="paisaReceivedModal">
+        <input type="hidden" id="paisaReceivedCategory" value="fee" />
+        <button type="button" class="paisa-cat-chip active" data-cat="fee">Fee</button>
+        <button type="button" class="paisa-cat-chip" data-cat="advance">Advance</button>
+        <button type="button" class="paisa-cat-chip" data-cat="final">Final</button>
+      </div>
+    `;
+
+    expect(window.setPaisaReceivedCategory).toBeDefined();
+    window.setPaisaReceivedCategory('advance');
+
+    expect(document.getElementById('paisaReceivedCategory').value).toBe('advance');
+    const chips = document.querySelectorAll('.paisa-cat-chip');
+    expect(chips[0].classList.contains('active')).toBe(false);
+    expect(chips[1].classList.contains('active')).toBe(true);
+    expect(chips[2].classList.contains('active')).toBe(false);
+  });
+
+  it('setPaisaFaceValue and handlePaisaCustomFaceValue should update ticket face value and chip states', () => {
+    document.body.innerHTML = `
+      <div id="paisaSpendModal">
+        <select id="paisaTicketValue">
+          <option value="5">₹5</option>
+          <option value="10" selected>₹10</option>
+          <option value="20">₹20</option>
+          <option value="50">₹50</option>
+        </select>
+        <input id="paisaCustomFaceValue" value="" />
+        <button type="button" class="paisa-fv-chip active" data-fv="10">₹10</button>
+        <button type="button" class="paisa-fv-chip" data-fv="20">₹20</button>
+        <select id="paisaTicketVendor">
+          <option value="ajay" selected>Ajay (₹11)</option>
+        </select>
+        <input id="paisaTicketQty" value="2" />
+        <input id="paisaSpendAmount" value="" />
+        <span id="paisaVendorRateHint"></span>
+      </div>
+    `;
+
+    expect(window.setPaisaFaceValue).toBeDefined();
+    window.setPaisaFaceValue(20);
+
+    expect(document.getElementById('paisaTicketValue').value).toBe('20');
+    expect(document.getElementById('paisaCustomFaceValue').value).toBe('');
+    expect(document.querySelector('.paisa-fv-chip[data-fv="20"]').classList.contains('active')).toBe(true);
+    expect(document.querySelector('.paisa-fv-chip[data-fv="10"]').classList.contains('active')).toBe(false);
+
+    // Custom face value
+    expect(window.handlePaisaCustomFaceValue).toBeDefined();
+    window.handlePaisaCustomFaceValue('50');
+    expect(document.getElementById('paisaTicketValue').value).toBe('50');
+    expect(document.querySelector('.paisa-fv-chip[data-fv="20"]').classList.contains('active')).toBe(false);
+  });
+
+  it('setPaisaSpendCategory should only open ticket calculator panel when ticket is selected and hide it for other categories', () => {
+    document.body.innerHTML = `
+      <div id="paisaSpendModal">
+        <input type="hidden" id="paisaSpendCategory" value="ticket" />
+        <button type="button" class="cat-btn paisa-cat-chip active" data-cat="ticket"><span>🎫</span> Ticket</button>
+        <button type="button" class="cat-btn paisa-cat-chip" data-cat="clerk"><span>👨‍💼</span> Clerk</button>
+        <button type="button" class="cat-btn paisa-cat-chip" data-cat="travel"><span>🚗</span> Travel</button>
+        <div id="paisaTicketCalcBox" class="calculator-panel"></div>
+        <div id="paisaSpendLinkSection" style="display: none;"></div>
+        <input id="paisaSpendPayeeName" value="" />
+        <select id="paisaTicketVendor"><option value="ajay">Ajay</option></select>
+        <select id="paisaTicketValue"><option value="10">10</option></select>
+        <input id="paisaTicketQty" value="1" />
+        <span id="paisaVendorRateHint"></span>
+      </div>
+    `;
+
+    expect(window.setPaisaSpendCategory).toBeDefined();
+
+    // Selecting 'clerk' hides the ticket calc box
+    window.setPaisaSpendCategory('clerk');
+    const calcBox = document.getElementById('paisaTicketCalcBox');
+    expect(calcBox.style.display).toBe('none');
+    expect(calcBox.classList.contains('hidden')).toBe(true);
+    expect(document.querySelector('[data-cat="clerk"]').classList.contains('active')).toBe(true);
+    expect(document.querySelector('[data-cat="ticket"]').classList.contains('active')).toBe(false);
+
+    // Selecting 'ticket' opens the ticket calc box
+    window.setPaisaSpendCategory('ticket');
+    expect(calcBox.style.display).toBe('flex');
+    expect(calcBox.classList.contains('hidden')).toBe(false);
+    expect(document.querySelector('[data-cat="ticket"]').classList.contains('active')).toBe(true);
+    expect(document.querySelector('[data-cat="clerk"]').classList.contains('active')).toBe(false);
+
+    // Selecting 'travel' hides it again
+    window.setPaisaSpendCategory('travel');
+    expect(calcBox.style.display).toBe('none');
+    expect(calcBox.classList.contains('hidden')).toBe(true);
+  });
+});
+
+describe('components/tabs/paisa/tab-paisa.js - Financial Ledger & Net Balances', () => {
+  beforeEach(() => {
+    if (window.allPaisaTransactions) {
+      window.allPaisaTransactions.length = 0;
+    }
+    if (window.allPersonalTransactions) {
+      window.allPersonalTransactions.length = 0;
+    }
+  });
+
+  it('getVirtualNetBalance should accurately compute: Received - Spent - TransferToPersonal', () => {
+    expect(window.getVirtualNetBalance).toBeDefined();
+
+    // 0 balance when empty
+    expect(window.getVirtualNetBalance()).toBe(0);
+
+    // Add received fee: ₹50,000
+    window.allPaisaTransactions.push({ id: '1', type: 'received', amount: 50000 });
+    expect(window.getVirtualNetBalance()).toBe(50000);
+
+    // Add court expense: ₹5,000
+    window.allPaisaTransactions.push({ id: '2', type: 'spent', amount: 5000 });
+    expect(window.getVirtualNetBalance()).toBe(45000);
+
+    // Transfer to advocate personal wallet: ₹10,000
+    window.allPaisaTransactions.push({ id: '3', type: 'transfer_to_personal', amount: 10000 });
+    expect(window.getVirtualNetBalance()).toBe(35000);
+  });
+
+  it('getPersonalBalance should compute: TransferIn - PersonalSpent', () => {
+    expect(window.getPersonalBalance).toBeDefined();
+
+    expect(window.getPersonalBalance()).toBe(0);
+
+    // Received transfer into personal wallet: ₹10,000
+    window.allPersonalTransactions.push({ id: 'p1', type: 'transfer_in', amount: 10000 });
+    expect(window.getPersonalBalance()).toBe(10000);
+
+    // Spent on personal expense: ₹3,200
+    window.allPersonalTransactions.push({ id: 'p2', type: 'personal_spent', amount: 3200 });
+    expect(window.getPersonalBalance()).toBe(6800);
+  });
+});
+
+describe('components/tabs/paisa/tab-paisa.js - Transaction Date Range Filter', () => {
+  it('getPaisaDateRangeFilter should correctly filter transactions by period', () => {
+    expect(window.getPaisaDateRangeFilter).toBeDefined();
+
+    const todayStr = window.getTodayDateString();
+    const filterAll = window.getPaisaDateRangeFilter('all');
+    const filterToday = window.getPaisaDateRangeFilter('today');
+
+    const txnToday = { id: 't1', date: todayStr };
+    const txnOld = { id: 't2', date: '2020-01-01' };
+
+    // 'all' includes everything
+    expect(filterAll(txnToday)).toBe(true);
+    expect(filterAll(txnOld)).toBe(true);
+
+    // 'today' includes only today
+    expect(filterToday(txnToday)).toBe(true);
+    expect(filterToday(txnOld)).toBe(false);
+  });
+
+  it('normalizePaisaDate should format various date formats into YYYY-MM-DD', () => {
+    expect(window.normalizePaisaDate).toBeDefined();
+    expect(window.normalizePaisaDate('2026-10-14')).toBe('2026-10-14');
+    expect(window.normalizePaisaDate('2026-10-14T09:30:00.000Z')).toBe('2026-10-14');
+    expect(window.normalizePaisaDate('14/10/2026')).toBe('2026-10-14');
+    expect(window.normalizePaisaDate('14-10-2026')).toBe('2026-10-14');
+  });
+
+  it('reconcilePersonalTransactions should automatically populate Personal Account with transfers from Virtual Account', () => {
+    expect(window.reconcilePersonalTransactions).toBeDefined();
+
+    window.allPaisaTransactions.length = 0;
+    window.allPersonalTransactions.length = 0;
+
+    // Simulate transfer recorded in Virtual Account
+    window.allPaisaTransactions.push({
+      id: 'transfer_101',
+      type: 'transfer_to_personal',
+      amount: 15000,
+      note: 'Transfer for household',
+      date: '2026-10-14'
+    });
+
+    // Before reconciliation, Personal Account is empty
+    expect(window.allPersonalTransactions.length).toBe(0);
+
+    // Run reconciliation
+    window.reconcilePersonalTransactions();
+
+    // After reconciliation, Personal Account should show the transfer entry
+    expect(window.allPersonalTransactions.length).toBe(1);
+    expect(window.allPersonalTransactions[0].type).toBe('transfer_in');
+    expect(window.allPersonalTransactions[0].amount).toBe(15000);
+    expect(window.allPersonalTransactions[0].note).toBe('Transfer for household');
+    expect(window.allPersonalTransactions[0].date).toBe('2026-10-14');
+    expect(window.getPersonalBalance()).toBe(15000);
+  });
+});
+
+
+describe('components/tabs/paisa/tab-paisa.js - Personal Budget Pulse (Option 4)', () => {
+  it('renderPersonalBudgetPulse should compute safe daily spend, pace badge, and top category drains', () => {
+    expect(window.renderPersonalBudgetPulse).toBeDefined();
+
+    document.body.innerHTML = `
+      <div id="paisaPersonalBudgetPulseCard">
+        <span id="paisaPulseStatusBadge"><span id="paisaPulseStatusText"></span></span>
+        <div id="paisaPulseDailySafeVal"></div>
+        <div id="paisaPulseDaysRemainingVal"></div>
+        <div id="paisaPulseTotalSpentVal"></div>
+        <div id="paisaPulseCapProgressVal"></div>
+        <div id="paisaPulseProgressBar" style="width: 0%"></div>
+        <span id="paisaPulseCapBoundLabel"></span>
+        <span id="paisaPulseDrainsCount"></span>
+        <div id="paisaPulseDrainsList"></div>
+        <strong id="paisaPulseReserveVal"></strong>
+      </div>
+    `;
+
+    window.allPersonalTransactions.length = 0;
+    localStorage.setItem('casebook_personal_budget_cap', '30000');
+    window.paisaPersonalSelectedPeriod = 'all';
+
+    window.allPersonalTransactions.push(
+      { id: 'in1', type: 'transfer_in', amount: 30000, date: '2026-10-10' },
+      { id: 'sp1', type: 'personal_spent', amount: 7000, category: 'groceries', note: 'Food market', date: '2026-10-12' },
+      { id: 'sp2', type: 'personal_spent', amount: 5000, category: 'fuel', note: 'Petrol pump', date: '2026-10-15' }
+    );
+
+    window.renderPersonalBudgetPulse();
+
+    expect(document.getElementById('paisaPulseTotalSpentVal').textContent).toBe('₹12,000');
+    expect(document.getElementById('paisaPulseReserveVal').textContent).toBe('₹18,000');
+    expect(document.getElementById('paisaPulseCapProgressVal').textContent).toContain('40%');
+    expect(document.getElementById('paisaPulseProgressBar').style.width).toBe('40%');
+    expect(document.getElementById('paisaPulseStatusText').textContent).toBe('On Track');
+    expect(document.getElementById('paisaPulseDrainsList').innerHTML).toContain('Food &amp; Dining');
+    expect(document.getElementById('paisaPulseDrainsList').innerHTML).toContain('Fuel &amp; Travel');
+  });
+});
+
+
+describe('components/tabs/paisa/tab-paisa.js - Virtual Account Refactoring & Cashflow Pulse', () => {
+  it('renderVirtualCashflowPulse should compute operating margin, collection split, and available transfer', () => {
+    expect(window.renderVirtualCashflowPulse).toBeDefined();
+
+    document.body.innerHTML = `
+      <div id="paisaVirtualCashflowPulseCard">
+        <span id="paisaVirtualStatusBadge"><span id="paisaVirtualStatusText"></span></span>
+        <div id="paisaVirtualMarginVal"></div>
+        <div id="paisaVirtualSurplusVal"></div>
+        <div id="paisaVirtualAvgReceiptVal"></div>
+        <div id="paisaVirtualReceiptCount"></div>
+        <span id="paisaVirtualOnlinePct"></span>
+        <span id="paisaVirtualCashPct"></span>
+        <div id="paisaVirtualOnlineBar" style="width: 50%"></div>
+        <div id="paisaVirtualCashBar" style="width: 50%"></div>
+        <span id="paisaVirtualOnlineAmtLbl"></span>
+        <span id="paisaVirtualCashAmtLbl"></span>
+        <span id="paisaVirtualExpenseCount"></span>
+        <div id="paisaVirtualDrainsList"></div>
+        <strong id="paisaVirtualAvailableTransferVal"></strong>
+      </div>
+    `;
+
+    const mockTransactions = [
+      { id: 'v1', type: 'received', amount: 50000, mode: 'online', date: '2026-10-10' },
+      { id: 'v2', type: 'received', amount: 20000, mode: 'cash', date: '2026-10-12' },
+      { id: 'v3', type: 'spent', amount: 15000, category: 'court', note: 'High court stamp', date: '2026-10-14' },
+      { id: 'v4', type: 'transfer_to_personal', amount: 10000, date: '2026-10-15' }
+    ];
+
+    window.renderVirtualCashflowPulse(mockTransactions);
+
+    // Total received = 70,000, Total spent = 15,000, Transferred = 10,000 -> Net = 45,000
+    // Margin = (45,000 / 70,000) * 100 = 64%
+    expect(document.getElementById('paisaVirtualMarginVal').textContent).toBe('64%');
+    expect(document.getElementById('paisaVirtualSurplusVal').textContent).toContain('Surplus +₹45,000');
+    expect(document.getElementById('paisaVirtualStatusText').textContent).toBe('Healthy Margin');
+
+    // Online vs Cash: Online 50k (71%), Cash 20k (29%)
+    expect(document.getElementById('paisaVirtualOnlinePct').textContent).toBe('71%');
+    expect(document.getElementById('paisaVirtualCashPct').textContent).toBe('29%');
+    expect(document.getElementById('paisaVirtualOnlineAmtLbl').textContent).toBe('₹50,000');
+    expect(document.getElementById('paisaVirtualCashAmtLbl').textContent).toBe('₹20,000');
+
+    // Available to transfer
+    expect(document.getElementById('paisaVirtualAvailableTransferVal').textContent).toBe('₹45,000');
+  });
+});
+
+describe('components/tabs/paisa/tab-paisa.js - Dropdown Synchronization (Virtual vs Personal)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <div id="paisaTimeRangeDropdown" class="custom-dropdown">
+        <select id="paisaTimeRangeSelect" style="display:none;">
+          <option value="today">📅 Today</option>
+          <option value="yesterday">⏳ Yesterday</option>
+          <option value="custom_date">📆 Specific Day...</option>
+          <option value="week">📊 Weekly</option>
+          <option value="month" selected>🗓️ Monthly</option>
+          <option value="all">🌐 All Time</option>
+        </select>
+        <button type="button" class="custom-dropdown-trigger">
+          <span class="custom-dropdown-label" id="paisaTimeRangeLabel">🗓️ Monthly</span>
+          <svg class="custom-dropdown-chevron"></svg>
+        </button>
+        <div class="custom-dropdown-menu">
+          <ul class="custom-dropdown-list"></ul>
+        </div>
+      </div>
+
+      <div id="paisaPersonalTimeRangeDropdown" class="custom-dropdown">
+        <select id="paisaPersonalTimeRangeSelect" style="display:none;">
+          <option value="today">📅 Today</option>
+          <option value="yesterday">⏳ Yesterday</option>
+          <option value="custom_date">📆 Specific Day...</option>
+          <option value="week">📊 Weekly</option>
+          <option value="month" selected>🗓️ Monthly</option>
+          <option value="all">🌐 All Time</option>
+        </select>
+        <button type="button" class="custom-dropdown-trigger">
+          <span class="custom-dropdown-label" id="paisaPersonalTimeRangeLabel">🗓️ Monthly</span>
+          <svg class="custom-dropdown-chevron"></svg>
+        </button>
+        <div class="custom-dropdown-menu">
+          <ul class="custom-dropdown-list"></ul>
+        </div>
+      </div>
+
+      <span id="paisaNetBalance">₹0</span>
+      <span id="paisaPersonalBalance">₹0</span>
+      <input type="text" id="paisaTxnSearchInput" />
+      <input type="text" id="paisaPersonalTxnSearchInput" />
+      <span id="paisaPersonalFilterBadge"></span>
+      <span id="filterBadge"></span>
+      <span id="paisaActiveFiltersBadge"></span>
+      <div id="paisaActiveFilterChips"></div>
+      <span id="paisaPersonalActiveFiltersBadge"></span>
+      <div id="paisaPersonalActiveFilterChips"></div>
+    `;
+
+    if (typeof window.initCustomDropdown === 'function') {
+      window.initCustomDropdown('paisaTimeRangeDropdown', 'paisaTimeRangeSelect', (val) => {
+        window.handlePaisaPeriodChange(val);
+      });
+      window.initCustomDropdown('paisaPersonalTimeRangeDropdown', 'paisaPersonalTimeRangeSelect', (val) => {
+        window.handlePaisaPersonalPeriodChange(val);
+      });
+    }
+  });
+
+  it('syncs Personal Account dropdown when All Time is selected in Virtual Account dropdown', () => {
+    window.handlePaisaPeriodChange('all');
+
+    expect(window.paisaSelectedPeriod).toBe('all');
+    expect(window.paisaPersonalSelectedPeriod).toBe('all');
+
+    const vSelect = document.getElementById('paisaTimeRangeSelect');
+    const pSelect = document.getElementById('paisaPersonalTimeRangeSelect');
+    const vLabel = document.getElementById('paisaTimeRangeLabel');
+    const pLabel = document.getElementById('paisaPersonalTimeRangeLabel');
+
+    expect(vSelect.value).toBe('all');
+    expect(pSelect.value).toBe('all');
+    expect(vLabel.textContent).toContain('All Time');
+    expect(pLabel.textContent).toContain('All Time');
+  });
+
+  it('syncs Virtual Account dropdown when a period is selected in Personal Account dropdown', () => {
+    window.handlePaisaPersonalPeriodChange('week');
+
+    expect(window.paisaSelectedPeriod).toBe('week');
+    expect(window.paisaPersonalSelectedPeriod).toBe('week');
+
+    const vSelect = document.getElementById('paisaTimeRangeSelect');
+    const pSelect = document.getElementById('paisaPersonalTimeRangeSelect');
+    const vLabel = document.getElementById('paisaTimeRangeLabel');
+    const pLabel = document.getElementById('paisaPersonalTimeRangeLabel');
+
+    expect(vSelect.value).toBe('week');
+    expect(pSelect.value).toBe('week');
+    expect(vLabel.textContent).toContain('Weekly');
+    expect(pLabel.textContent).toContain('Weekly');
+  });
+
+  it('syncs both dropdowns when resetting back to month', () => {
+    window.handlePaisaPeriodChange('all');
+    expect(window.paisaPersonalSelectedPeriod).toBe('all');
+
+    window.handlePaisaPeriodChange('month');
+    expect(window.paisaSelectedPeriod).toBe('month');
+    expect(window.paisaPersonalSelectedPeriod).toBe('month');
+
+    const vSelect = document.getElementById('paisaTimeRangeSelect');
+    const pSelect = document.getElementById('paisaPersonalTimeRangeSelect');
+    const vLabel = document.getElementById('paisaTimeRangeLabel');
+    const pLabel = document.getElementById('paisaPersonalTimeRangeLabel');
+
+    expect(vSelect.value).toBe('month');
+    expect(pSelect.value).toBe('month');
+    expect(vLabel.textContent).toContain('Monthly');
+    expect(pLabel.textContent).toContain('Monthly');
+  });
+});
+
+describe('components/tabs/paisa/tab-paisa.js - Personal Account Transaction Detail Modal & Interactions', () => {
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <div id="paisaPersonalTransactionsFeed"></div>
+      <div id="paisaPersonalTxnCountBadge"></div>
+      <div id="paisaPersonalFilteredEarningVal"></div>
+      <div id="paisaPersonalFilteredExpenseVal"></div>
+      <div id="paisaPersonalFilteredBalanceVal"></div>
+      <div id="paisaPersonalAccountBalance"></div>
+      <div id="paisaPersonalTotalSpent"></div>
+      <div id="paisaPersonalMonthSpent"></div>
+      <div id="paisaPersonalWeekSpent"></div>
+      <div id="paisaPersonalSpentToday"></div>
+      <div id="paisaPersonalTransferredIn"></div>
+      <div id="paisaToast" class="hidden"></div>
+
+      <!-- Detail Modal -->
+      <div id="paisaDetailModal" class="modal-overlay hidden">
+        <div class="modal-card">
+          <div class="modal-header">
+            <div class="modal-icon paisa-detail-modal-icon icon-recv"></div>
+            <h3 id="paisaDetailTitle">Transaction Details</h3>
+          </div>
+          <div class="modal-body" id="paisaDetailBody"></div>
+          <div class="modal-footer paisa-detail-modal-footer">
+            <button type="button" id="paisaDetailEditBtn">Edit</button>
+            <button type="button" id="paisaDetailDeleteBtn">Delete</button>
+            <button type="button" id="paisaDetailCloseBtn" onclick="closePaisaModal('paisaDetailModal')">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Personal Spend Modal -->
+      <div id="paisaPersonalSpendModal" class="modal-overlay hidden">
+        <h3 id="paisaPersonalSpendModalTitle">Personal Expense</h3>
+        <form id="paisaPersonalSpendForm">
+          <input type="number" id="paisaPersonalSpendAmount" />
+          <input type="text" id="paisaPersonalSpendNote" />
+          <select id="paisaPersonalSpendCategory">
+            <option value="groceries">Groceries</option>
+            <option value="fuel">Fuel</option>
+            <option value="bills">Bills</option>
+            <option value="other">Other</option>
+          </select>
+          <input type="date" id="paisaPersonalSpendDate" />
+          <button type="submit">Save Personal Expense</button>
+        </form>
+      </div>
+    `;
+
+    window.paisaPersonalSelectedPeriod = 'all';
+    window.paisaSelectedPeriod = 'all';
+    if (typeof window.handlePaisaPersonalPeriodChange === 'function') {
+      window.handlePaisaPersonalPeriodChange('all');
+    }
+    if (window.allPaisaTransactions) {
+      window.allPaisaTransactions.length = 0;
+    }
+    if (window.allPersonalTransactions) {
+      window.allPersonalTransactions.length = 0;
+      window.allPersonalTransactions.push(
+        {
+          id: 'pt_spent_101',
+          type: 'personal_spent',
+          amount: 2500,
+          note: 'Supermarket Groceries',
+          category: 'groceries',
+          date: '2026-10-25',
+          created_at: '2026-10-25T10:00:00Z'
+        },
+        {
+          id: 'pt_transfer_102',
+          type: 'transfer_in',
+          amount: 15000,
+          note: 'Transferred from Virtual',
+          category: '',
+          date: '2026-10-24',
+          created_at: '2026-10-24T09:00:00Z'
+        }
+      );
+    }
+    if (typeof window.handlePaisaPersonalPeriodChange === 'function') {
+      window.handlePaisaPersonalPeriodChange('all');
+    }
+  });
+
+  it('renders onclick="openPaisaDetailModal(...)" on both mobile cards and table rows in personal feed', () => {
+    window.renderPersonalTransactionsFeed();
+
+    const feed = document.getElementById('paisaPersonalTransactionsFeed');
+    expect(feed.innerHTML).toContain('onclick="openPaisaDetailModal(\'pt_spent_101\')"');
+    expect(feed.innerHTML).toContain('onclick="openPaisaDetailModal(\'pt_transfer_102\')"');
+
+    const mobileRows = feed.querySelectorAll('.paisa-tx-row');
+    const tableRows = feed.querySelectorAll('.paisa-table-row');
+    expect(mobileRows.length).toBeGreaterThan(0);
+    expect(tableRows.length).toBeGreaterThan(0);
+
+    const firstMobileRow = mobileRows[0];
+    expect(firstMobileRow.getAttribute('onclick')).toContain('openPaisaDetailModal');
+
+    // Mini delete button should have stopPropagation
+    const deleteBtn = feed.querySelector('.paisa-del-mini-btn');
+    expect(deleteBtn.getAttribute('onclick')).toContain('event.stopPropagation()');
+  });
+
+  it('opens transaction detail modal when clicking a personal_spent transaction', () => {
+    const modal = document.getElementById('paisaDetailModal');
+    expect(modal.classList.contains('hidden')).toBe(true);
+
+    window.openPaisaDetailModal('pt_spent_101');
+
+    expect(modal.classList.contains('hidden')).toBe(false);
+    expect(modal.classList.contains('active')).toBe(true);
+
+    const body = document.getElementById('paisaDetailBody');
+    expect(body.innerHTML).toContain('Personal Account');
+    expect(body.innerHTML).toContain('Supermarket Groceries');
+    expect(body.innerHTML).toContain('2,500');
+    expect(body.innerHTML).toContain('GROCERIES');
+
+    // Edit button should be visible for personal_spent
+    const editBtn = document.getElementById('paisaDetailEditBtn');
+    expect(editBtn.style.display).not.toBe('none');
+
+    // Delete button should be visible for personal_spent
+    const deleteBtn = document.getElementById('paisaDetailDeleteBtn');
+    expect(deleteBtn.style.display).not.toBe('none');
+  });
+
+  it('opens transaction detail modal when clicking a transfer_in transaction', () => {
+    const modal = document.getElementById('paisaDetailModal');
+    expect(modal.classList.contains('hidden')).toBe(true);
+
+    window.openPaisaDetailModal('pt_transfer_102');
+
+    expect(modal.classList.contains('hidden')).toBe(false);
+    expect(modal.classList.contains('active')).toBe(true);
+
+    const body = document.getElementById('paisaDetailBody');
+    expect(body.innerHTML).toContain('Personal Account');
+    expect(body.innerHTML).toContain('Transferred from Virtual');
+    expect(body.innerHTML).toContain('15,000');
+    expect(body.innerHTML).toContain('TRANSFERRED FROM VIRTUAL');
+
+    // Edit and delete buttons should be hidden for internal transfer receipts
+    const editBtn = document.getElementById('paisaDetailEditBtn');
+    expect(editBtn.style.display).toBe('none');
+
+    const deleteBtn = document.getElementById('paisaDetailDeleteBtn');
+    expect(deleteBtn.style.display).toBe('none');
+  });
+
+  it('allows editing personal spend from detail modal edit button', () => {
+    window.openPaisaDetailModal('pt_spent_101');
+
+    const editBtn = document.getElementById('paisaDetailEditBtn');
+    editBtn.click();
+
+    // Detail modal should be closed
+    expect(document.getElementById('paisaDetailModal').classList.contains('active')).toBe(false);
+
+    // Personal spend modal should be opened in edit mode
+    const spendModal = document.getElementById('paisaPersonalSpendModal');
+    expect(spendModal.classList.contains('active')).toBe(true);
+    expect(document.getElementById('paisaPersonalSpendModalTitle').textContent).toBe('Edit Personal Expense');
+    expect(document.getElementById('paisaPersonalSpendAmount').value).toBe('2500');
+    expect(document.getElementById('paisaPersonalSpendNote').value).toBe('Supermarket Groceries');
+    expect(document.getElementById('paisaPersonalSpendCategory').value).toBe('groceries');
+
+    // Change amount and submit
+    document.getElementById('paisaPersonalSpendAmount').value = '3200';
+    document.getElementById('paisaPersonalSpendNote').value = 'Supermarket Groceries & Snacks';
+
+    const fakeEvent = { preventDefault: () => {} };
+    window.handlePaisaPersonalSpend(fakeEvent);
+
+    const updated = window.allPersonalTransactions.find(t => t.id === 'pt_spent_101');
+    expect(updated.amount).toBe(3200);
+    expect(updated.note).toBe('Supermarket Groceries & Snacks');
+    expect(spendModal.classList.contains('active')).toBe(false);
+  });
+});
+
+describe('components/tabs/paisa/tab-paisa.js - Received Modal & Link Case Dropdown Refinement', () => {
+  beforeEach(() => {
+    window.allCaseRecords = [
+      {
+        caseNo: '326',
+        caseName: 'State of U.P. vs Rampal',
+        parties: ['State of U.P.', 'Rampal'],
+        courtName: 'ACJM-5 / Add. Civil Judge Senior Division Court No. 5',
+        clientName: 'Rampal',
+        clientNumber: '9876543210'
+      },
+      {
+        caseNo: '412',
+        caseName: 'Ram khilawan vs Suresh',
+        parties: ['Ram khilawan', 'Suresh'],
+        courtName: 'Civil Judge Junior Division Lakhimpur Kheri',
+        clientName: 'Ram khilawan',
+        clientNumber: '9876500000'
+      }
+    ];
+
+    document.body.innerHTML = `
+      <div id="paisaReceivedModal" class="modal-overlay hidden">
+        <input type="text" id="paisaReceivedClientName" value="" />
+        <div id="paisaReceivedSuggestions" class="account-suggestions-box hidden"></div>
+        <div id="paisaReceivedCaseBadge" class="account-suggested-case-badge hidden"></div>
+        <select id="paisaReceivedCaseSelect">
+          <option value="">-- No specific case linked --</option>
+        </select>
+      </div>
+    `;
+
+    window.populatePaisaCaseDropdown('paisaReceivedCaseSelect');
+  });
+
+  it('searchSmartCaseSuggestions returns structured metadata and ranks prefix/word-boundary matches', () => {
+    const res = window.searchSmartCaseSuggestions('ra');
+    expect(res.length).toBeGreaterThan(0);
+
+    const rampalMatch = res.find(r => r.partyName === 'Rampal');
+    expect(rampalMatch).toBeDefined();
+    expect(rampalMatch.caseNo).toBe('326');
+    expect(rampalMatch.title).toBe('State of U.P. vs Rampal');
+    expect(rampalMatch.courtName).toContain('ACJM-5');
+  });
+
+  it('handlePaisaClientInput renders refined result card with case number and title', () => {
+    window.handlePaisaClientInput('ra', 'received');
+
+    const container = document.getElementById('paisaReceivedSuggestions');
+    expect(container.classList.contains('hidden')).toBe(false);
+
+    // Should render refined elements
+    const item = container.querySelector('.account-suggestion-item');
+    expect(item).not.toBeNull();
+    expect(item.querySelector('.account-sug-name')).not.toBeNull();
+    expect(item.querySelector('.account-sug-caseno').textContent).toContain('#');
+    expect(item.querySelector('.account-suggestion-case-title')).not.toBeNull();
+    expect(item.querySelector('.account-match-pill')).not.toBeNull();
+
+    // Suggested case banner
+    const badge = document.getElementById('paisaReceivedCaseBadge');
+    expect(badge.classList.contains('hidden')).toBe(false);
+    expect(badge.textContent).toContain('Link Case');
+  });
+
+  it('selectPaisaSuggestion sets payee name and auto-links case in dropdown', () => {
+    window.handlePaisaClientInput('ra', 'received');
+    window.selectPaisaSuggestion(0, 'received');
+
+    const clientInput = document.getElementById('paisaReceivedClientName');
+    expect(clientInput.value).toBeTruthy();
+
+    const caseSelect = document.getElementById('paisaReceivedCaseSelect');
+    expect(caseSelect.value).toBeTruthy();
+    expect(document.getElementById('paisaReceivedSuggestions').classList.contains('hidden')).toBe(true);
+  });
+});
+
+

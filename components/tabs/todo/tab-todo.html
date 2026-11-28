@@ -1,0 +1,449 @@
+    <!-- To-Do & Deadlines Header Banner (Master Calendar Style) -->
+    <header class="board-head todo-master-head">
+        <div class="head-left">
+            <h1 class="h1">
+                <span class="crest" aria-hidden="true"><svg class="lucide lucide-check-square" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+                <span class="h1-text" id="todoMainTitle">Case Tasks &amp; To-Do Tracker</span>
+            </h1>
+            <div class="sub" id="todoHeaderSubline">
+                <b id="todoFormattedSubline">Tasks &amp; Deadlines</b> · <span id="todoHeaderCountBadge">0 active</span>
+            </div>
+        </div>
+        <div class="head-actions">
+            <button type="button" id="openTodoTaskModalBtn" class="primary-btn" onclick="openTodoTaskModal()">
+                <svg class="lucide lucide-plus" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg> Add New Task
+            </button>
+        </div>
+    </header>
+
+    <div class="todo-layout-grid todo-layout-grid--task-list-only">
+        <!-- New Task Form Modal -->
+        <div
+            id="todoTaskCreateModal"
+            class="modal-overlay hidden todo-task-modal-scope"
+            data-todo-scope
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="todoTaskCreateModalTitle"
+            onclick="if (event.target === this) closeTodoTaskModal();"
+        >
+            <div class="modal-card todo-task-create-modal-box">
+                <div class="modal-header">
+                    <div class="modal-header-info">
+                        <div class="modal-icon"><iconify-icon icon="lucide:scale"></iconify-icon></div>
+                        <div>
+                            <h3 id="todoTaskCreateModalTitle">New Task</h3>
+                            <p class="modal-subtitle">Link a task to a case hearing or general to-do</p>
+                        </div>
+                    </div>
+                    <button type="button" id="todoTaskCreateModalCloseBtn" class="modal-close-btn" onclick="closeTodoTaskModal()" aria-label="Close modal" title="Close modal"><svg class="lucide lucide-x" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+                </div>
+
+        <div class="todo-form-panel">
+            <div class="todo-panel-header">
+                <div class="todo-panel-header-gradient">
+                    <div class="todo-panel-header-icon"><iconify-icon icon="lucide:scale"></iconify-icon></div>
+                    <div>
+                        <h4>New Task</h4>
+                        <p class="todo-panel-subtitle">Link a task to a case hearing or general to-do</p>
+                    </div>
+                </div>
+            </div>
+
+            <form id="addTodoForm" onsubmit="return handleAddTodoSubmit(event);">
+                <!-- Searchable / Typeable Case Dropdown Group -->
+                <div class="form-group todo-searchable-group">
+                    <div class="todo-label-row">
+                        <label for="todoCaseSearchInput">Link to Case</label>
+                        <span class="todo-field-hint">Type to search — or pick 📌 General Task</span>
+                    </div>
+                    <div class="todo-combobox-wrapper" id="todoComboboxWrapper">
+                        <button type="button" class="todo-select-trigger" id="todoCaseSelectTrigger" aria-haspopup="listbox" aria-expanded="false" onclick="toggleTodoCaseDropdown()">
+                            <span class="todo-select-trigger-label" id="todoCaseSelectedLabel">Select a case or choose General Task</span>
+                            <svg class="todo-select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <!-- Hidden native select for form serialization, backward compatibility & test suites -->
+                        <select id="todoCaseSelect" class="form-select todo-custom-select" style="display: none;" required>
+                            <option value="">-- Choose Case to Link --</option>
+                        </select>
+                        <!-- Searchable grouped dropdown -->
+                        <div id="todoCaseDropdownList" class="todo-combobox-results hidden">
+                            <div class="todo-dropdown-search-wrapper">
+                                <span class="todo-combobox-search-icon"><iconify-icon icon="lucide:search"></iconify-icon></span>
+                                <input type="text" id="todoCaseSearchInput" class="todo-dropdown-search-input" placeholder="Search cases... (e.g. Bail, Evidence)" autocomplete="off" oninput="filterTodoCaseDropdown(this.value)" onkeydown="handleTodoCaseDropdownKeydown(event)">
+                            </div>
+                            <ul id="todoCaseOptionsList" class="todo-case-options-list" role="listbox" aria-label="Cases to link"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Case info banner with dynamic preview -->
+                <div id="todoCaseInfoBanner" class="todo-case-preview-card hidden">
+                    <div class="todo-preview-card-badge-row">
+                        <span id="todoBannerCaseType" class="case-badge civil">—</span>
+                        <span id="todoBannerCaseNum" class="todo-preview-caseno">—</span>
+                        <button type="button" class="todo-preview-change-btn" onclick="openTodoCaseDropdown(); document.getElementById('todoCaseSearchInput').focus();" title="Select different case"><iconify-icon icon="lucide:pencil"></iconify-icon> Change</button>
+                    </div>
+                    <h5 id="todoBannerCaseName" class="todo-preview-title">—</h5>
+                    <div class="todo-preview-meta-grid">
+                        <div class="todo-meta-pill"><iconify-icon icon="lucide:landmark"></iconify-icon> <span id="todoBannerCourt">—</span></div>
+                        <div class="todo-meta-pill hearing"><iconify-icon icon="lucide:calendar"></iconify-icon> Next Hearing: <span id="todoBannerHearing" class="highlight-date-text">—</span></div>
+                    </div>
+                </div>
+
+                <!-- Task Workflow Type Selector -->
+                <div class="form-group">
+                    <div class="todo-label-row">
+                        <label for="todoWorkflowType">Task Workflow Type</label>
+                        <span class="todo-field-hint">Standard or Multi-Step</span>
+                    </div>
+                    <select id="todoWorkflowType" class="form-select todo-custom-select" onchange="onTodoWorkflowTypeChange(this.value)">
+                        <option value="standard">Standard Single Action</option>
+                        <option value="certified_copy">Certified Copy (4-Step Workflow)</option>
+                        <option value="custom">Custom Multi-Step Workflow</option>
+                    </select>
+                </div>
+
+                <!-- multi-step workflow preview banner -->
+                <div id="todoWorkflowStepsPreview" class="todo-workflow-preview hidden">
+                    <div class="workflow-preview-header">
+                        <iconify-icon icon="lucide:layers"></iconify-icon> <strong>Certified Copy (4 Steps):</strong>
+                    </div>
+                    <div class="workflow-preview-steps">
+                        <span class="preview-step-tag">1. Apply</span>
+                        <span class="preview-step-tag">2. Copy from office</span>
+                        <span class="preview-step-tag">3. Preparation in copy office</span>
+                        <span class="preview-step-tag">4. Receive</span>
+                    </div>
+                </div>
+
+                <!-- Application No. (required for all multi-step workflows) -->
+                <div id="todoCopyNumberGroup" class="todo-copy-number-group hidden">
+                    <div class="todo-label-row">
+                        <label for="todoCopyNumber" class="todo-copy-label">Application No. <span class="required-star">*</span></label>
+                        <span class="todo-field-hint todo-copy-hint">Required for multi-step tasks</span>
+                    </div>
+                    <div class="todo-input-icon-wrap">
+                        <span class="todo-input-inner-icon todo-copy-icon"><iconify-icon icon="lucide:stamp"></iconify-icon></span>
+                        <input type="text" id="todoCopyNumber" class="todo-custom-input with-icon" placeholder="Enter application number (e.g. 12344/12)" oninput="onTodoCopyNumberInput(this.value)">
+                    </div>
+                </div>
+
+                <!-- Custom Multi-Step Definition Input -->
+                <div id="todoCustomStepsContainer" class="todo-custom-steps-wrap hidden">
+                    <div class="todo-label-row">
+                        <label for="todoCustomStepsInput">Define Sub-Steps <span class="required-star">*</span></label>
+                        <span class="todo-field-hint">Comma-separated steps</span>
+                    </div>
+                    <div class="todo-input-icon-wrap">
+                        <span class="todo-input-inner-icon"><iconify-icon icon="lucide:list-ordered"></iconify-icon></span>
+                        <input type="text" id="todoCustomStepsInput" class="todo-custom-input with-icon" placeholder="e.g. Drafting, Verification, Filing, Notice Served">
+                    </div>
+                    <div class="custom-step-tips-row">
+                        <span>💡 Type steps separated by commas. Each will become a clickable check-step.</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="todo-label-row">
+                        <label for="todoTitle">Task / Action Item <span class="required-star">*</span></label>
+                        <span class="todo-field-hint">Preparation or filing</span>
+                    </div>
+                    <div class="todo-input-icon-wrap">
+                        <span class="todo-input-inner-icon"><iconify-icon icon="lucide:pen-line"></iconify-icon></span>
+                        <input type="text" id="todoTitle" class="todo-custom-input with-icon" placeholder="e.g. Draft Written Statement, File Bail, Collect Evidence" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="todo-label-row">
+                        <label for="todoDeadline">Deadline Date <span class="required-star">*</span></label>
+                        <span class="todo-field-hint">Due before or on hearing</span>
+                    </div>
+                    <div class="todo-input-icon-wrap">
+                        <span class="todo-input-inner-icon"><iconify-icon icon="lucide:calendar"></iconify-icon></span>
+                        <input type="date" id="todoDeadline" class="todo-custom-input with-icon highlight-date-input" required>
+                    </div>
+                    <div class="todo-shortcuts-row">
+                        <button type="button" class="todo-shortcut-pill" onclick="setTodoDeadlinePreset('hearing')" title="Set deadline on the exact hearing date"><iconify-icon icon="lucide:target"></iconify-icon> Hearing Date</button>
+                        <button type="button" class="todo-shortcut-pill" onclick="setTodoDeadlinePreset('1day')" title="Set deadline 1 day before the hearing"><iconify-icon icon="lucide:zap"></iconify-icon> 1 Day</button>
+                        <button type="button" class="todo-shortcut-pill" onclick="setTodoDeadlinePreset('3days')" title="Set deadline 3 days before the hearing"><iconify-icon icon="lucide:clipboard-list"></iconify-icon> 3 Days</button>
+                    </div>
+                </div>
+
+                <!-- Reminder & Alert Notification Section -->
+                <div class="form-group todo-reminder-group">
+                    <div class="todo-label-row">
+                        <label for="todoReminderToggle" class="todo-reminder-label-flex">
+                            <span><iconify-icon icon="lucide:bell" class="todo-bell-icon"></iconify-icon> Set Reminder Alert</span>
+                        </label>
+                        <label class="todo-switch">
+                            <input type="checkbox" id="todoReminderToggle" onchange="toggleTodoReminderFields(this.checked)">
+                            <span class="todo-slider round"></span>
+                        </label>
+                    </div>
+                    <div id="todoReminderFields" class="todo-reminder-subbox hidden">
+                        <div class="todo-input-icon-wrap">
+                            <span class="todo-input-inner-icon"><iconify-icon icon="lucide:bell"></iconify-icon></span>
+                            <input type="datetime-local" id="todoReminderDateTime" class="todo-custom-input with-icon highlight-date-input">
+                        </div>
+                        <div class="todo-shortcuts-row">
+                            <button type="button" class="todo-shortcut-pill" onclick="setTodoReminderPreset('deadline_9am')" title="Remind on deadline morning at 9:00 AM"><iconify-icon icon="lucide:target"></iconify-icon> Deadline 9 AM</button>
+                            <button type="button" class="todo-shortcut-pill" onclick="setTodoReminderPreset('1day_9am')" title="Remind 1 day before deadline at 9:00 AM"><iconify-icon icon="lucide:zap"></iconify-icon> 1 Day Before</button>
+                            <button type="button" class="todo-shortcut-pill" onclick="setTodoReminderPreset('2days_9am')" title="Remind 2 days before deadline at 9:00 AM"><iconify-icon icon="lucide:clipboard-list"></iconify-icon> 2 Days Before</button>
+                        </div>
+                        <span class="todo-field-hint">
+                            Sound chime + desktop notification when the time arrives.
+                        </span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Priority Level</label>
+                    <input type="hidden" id="todoPriority" value="medium">
+                    <div class="todo-priority-selector">
+                        <button type="button" class="todo-priority-chip high" onclick="setTodoPriority('high')">
+                            <span class="chip-dot red"></span> High (Urgent)
+                        </button>
+                        <button type="button" class="todo-priority-chip medium active" onclick="setTodoPriority('medium')">
+                            <span class="chip-dot amber"></span> Medium
+                        </button>
+                        <button type="button" class="todo-priority-chip normal" onclick="setTodoPriority('normal')">
+                            <span class="chip-dot blue"></span> Normal
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+
+                <div class="modal-footer">
+                    <button type="button" id="todoTaskCreateModalCancelBtn" class="secondary-btn" onclick="closeTodoTaskModal()">Cancel</button>
+                    <button type="submit" id="saveTodoBtn" form="addTodoForm" class="todo-submit-btn primary-btn">
+                        <iconify-icon icon="lucide:send"></iconify-icon> <span>Create Task</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Interactive Tasks List -->
+        <div class="todo-list-panel">
+            <div class="todo-list-header">
+                <div class="todo-list-header-top">
+                    <div class="todo-search-box">
+                        <span class="todo-search-icon"><iconify-icon icon="lucide:search"></iconify-icon></span>
+                        <input type="text" id="todoSearchInput" class="todo-search-input" placeholder="Search tasks by title, case number, party..." oninput="onTodoSearchInput(this.value)" enterkeyhint="search" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="todo-filter-strip" role="tablist" aria-label="Task Status Filters">
+                    <button type="button" class="todo-filter-tab active" data-filter="all" onclick="filterTodoTasks('all', this)" role="tab" aria-selected="true">
+                        <iconify-icon icon="lucide:layout-grid" class="todo-tab-icon" aria-hidden="true"></iconify-icon> All <span class="todo-filter-count" id="todoFilterAllCount">0</span>
+                    </button>
+                    <button type="button" class="todo-filter-tab" data-filter="pending" onclick="filterTodoTasks('pending', this)" role="tab" aria-selected="false">
+                        <iconify-icon icon="lucide:hourglass" class="todo-tab-icon" aria-hidden="true"></iconify-icon> Pending <span class="todo-filter-count" id="todoFilterPendingCount">0</span>
+                    </button>
+                    <button type="button" class="todo-filter-tab tab-urgent" data-filter="dueSoon" onclick="filterTodoTasks('dueSoon', this)" role="tab" aria-selected="false">
+                        <iconify-icon icon="lucide:flame" class="todo-tab-icon" aria-hidden="true"></iconify-icon> Due Soon <span class="todo-filter-count" id="todoFilterDueSoonCount">0</span>
+                    </button>
+                    <button type="button" class="todo-filter-tab tab-done" data-filter="completed" onclick="filterTodoTasks('completed', this)" role="tab" aria-selected="false">
+                        <iconify-icon icon="lucide:check-circle-2" class="todo-tab-icon" aria-hidden="true"></iconify-icon> Done <span class="todo-filter-count" id="todoFilterCompletedCount">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="todoListContainer" class="todo-items-list">
+                <div class="todo-empty-state">
+                    <div class="todo-empty-icon-wrap">
+                        <iconify-icon icon="lucide:clipboard-list"></iconify-icon>
+                    </div>
+                    <h4 class="todo-empty-title">No Tasks Yet</h4>
+                    <p>Create a task to track filings, deadlines, follow-ups, and case preparation.</p>
+                    <button type="button" class="todo-empty-cta" onclick="openTodoTaskModal()"><iconify-icon icon="lucide:plus"></iconify-icon> Create First Task</button>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- ================= TODO MODALS (MODULARIZED) ================= -->
+    <div
+      id="todoReminderModal"
+      class="modal-overlay hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="todoReminderModalTitle"
+      onclick="if (event.target === this) closeTodoReminderModal();"
+    >
+      <div class="modal-card modal-card-sm todo-reminder-modal-box">
+        <div class="modal-header">
+          <div class="modal-header-info">
+            <div
+              class="modal-icon"
+              class="todo-stat-icon-warn"
+            >
+              <iconify-icon icon="lucide:bell"></iconify-icon>
+            </div>
+            <div>
+              <h3
+                id="todoReminderModalTitle"
+                class="todo-modal-title"
+              >
+                Task Reminder Alert
+              </h3>
+              <p
+                class="todo-modal-subtitle"
+                id="todoReminderModalTaskSubtitle"
+                class="modal-subtitle"
+              >
+                Set audio chime and desktop notification
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="modal-close-btn"
+            onclick="closeTodoReminderModal()"
+            aria-label="Close modal"
+            title="Close modal"
+          >
+            <svg class="lucide lucide-x" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="todoReminderModalTaskId" />
+          <div class="form-group">
+            <label
+              for="todoReminderModalInput"
+              class="todo-modal-label"
+            >
+              Reminder Date &amp; Time
+            </label>
+            <div class="todo-input-icon-wrap">
+              <span class="todo-input-inner-icon"
+                ><iconify-icon icon="lucide:bell"></iconify-icon
+              ></span>
+              <input
+                type="datetime-local"
+                id="todoReminderModalInput"
+                class="todo-custom-input with-icon highlight-date-input"
+              />
+            </div>
+          </div>
+          <div class="todo-shortcuts-row">
+            <button
+              type="button"
+              class="todo-shortcut-pill"
+              onclick="setModalReminderPreset('in1hour')"
+            >
+              <iconify-icon icon="lucide:clock"></iconify-icon> In 1 Hour
+            </button>
+            <button
+              type="button"
+              class="todo-shortcut-pill"
+              onclick="setModalReminderPreset('today_evening')"
+            >
+              <iconify-icon icon="lucide:sun-medium"></iconify-icon> Today 6 PM
+            </button>
+            <button
+              type="button"
+              class="todo-shortcut-pill"
+              onclick="setModalReminderPreset('tomorrow_9am')"
+            >
+              <iconify-icon icon="lucide:sunrise"></iconify-icon> Tomorrow 9 AM
+            </button>
+            <button
+              type="button"
+              class="todo-shortcut-pill"
+              onclick="setModalReminderPreset('deadline_9am')"
+            >
+              <iconify-icon icon="lucide:target"></iconify-icon> Deadline 9 AM
+            </button>
+          </div>
+          <div
+            class="todo-reminder-status-info"
+            id="todoReminderCurrentStatusText"
+            class="todo-modal-info-box"
+          >
+            No reminder active for this task.
+          </div>
+        </div>
+        <div
+          class="modal-footer"
+          class="todo-modal-footer"
+        >
+          <button
+            type="button"
+            class="table-view-btn"
+            id="todoReminderRemoveBtn"
+            onclick="removeTaskReminderFromModal()"
+            class="todo-modal-delete-btn" style="display: none;"
+          >
+            <iconify-icon icon="lucide:trash-2"></iconify-icon> Remove Alert
+          </button>
+          <div>
+            <button
+              type="button"
+              class="table-view-btn"
+              onclick="closeTodoReminderModal()"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="primary-btn"
+              id="saveTaskReminderBtn"
+              onclick="saveTaskReminderFromModal()"
+            >
+              <iconify-icon icon="lucide:check"></iconify-icon> Save Reminder
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task Details & Management Dossier Modal -->
+    <div
+      id="taskDetailsModal"
+      class="modal-overlay hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="taskDetailsModalTitle"
+      onclick="if (event.target === this) closeTaskDetailsModal();"
+    >
+      <div class="modal-container task-details-modal-box">
+        <div class="modal-header">
+          <div class="header-title">
+            <h2 id="taskDetailsModalTitle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="header-dossier-icon">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              <span>Task Dossier &amp; Actions</span>
+            </h2>
+            <p id="taskDetailsModalSubtitle">Full case preparation &amp; workflow details</p>
+          </div>
+          <button
+            type="button"
+            class="btn-close modal-close-btn"
+            onclick="closeTaskDetailsModal()"
+            aria-label="Close modal"
+            title="Close modal"
+          >
+            <svg class="lucide lucide-x" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="modal-body task-details-modal-body" id="taskDetailsModalScrollBody">
+          <input type="hidden" id="taskDetailsModalTaskId" />
+          <div id="taskDetailsModalContent">
+            <!-- Populated dynamically by JS -->
+          </div>
+        </div>
+        <div
+          class="modal-footer task-details-modal-footer"
+          id="taskDetailsModalFooter"
+        >
+        </div>
+      </div>
+    </div>

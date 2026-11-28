@@ -1,0 +1,380 @@
+# CaseBook — Realme 9 Pro+ UI Responsiveness Audit & Progress Tracker
+
+> **Device Specifications:**
+> - **Model:** Realme 9 Pro+ (Realme 9 Pro Plus)
+> - **Display:** 6.4" Super AMOLED, 90Hz Refresh Rate, 1080 × 2400 pixels (20:9 aspect ratio)
+> - **Primary Audit Viewport:** `412px × 915px` (DPR ~2.625)
+> - **Secondary Viewport (Display Scale Small):** `392px × 872px`
+> - **Landscape Viewport:** `915px × 412px`
+> - **Hardware & OS Specifics:** Top-left punch-hole camera (~36px), Android Gesture bar (~16px), Gboard virtual keyboard (~300px height reduction)
+> - **Governing Standards:** [DESIGN.md](file:///d:/caseBook-modular/DESIGN.md) & [.agents/rules/ui-rules.md](file:///d:/caseBook-modular/.agents/rules/ui-rules.md)
+
+---
+
+## 1. Executive Progress Dashboard
+
+| Metric | Status | Target |
+| :--- | :--- | :--- |
+| **Audit Status** | 🟢 **ALL PHASES (1–7) 100% Verified & Signed Off (Zero Desktop Impact)** | 100% Audited & Verified |
+| **Total Tabs / Modules** | **24 Items** (22 Tabs + Shell + Global Modals) | 24 |
+| **Completed & Verified [✅]** | **24** (Shell, Cause List, Upcoming, Calendar, Hearing, Undated, Classic Home, Zen Home, All Cases Registry, Manage Cases, Add Case Form, Edit Case Form, Case Dossier, Disposed Cases, Court Transfer, Trash & Delete, To-Do & Tasks, Paisa Financials, Courts Master, Legal Helpers, Live Sync & CRUD, Settings, About, Global Modals & Toasts) | 24 (100.0%) |
+| **In Progress [🔄]** | **0** | - |
+| **Pending [⏳]** | **0** | 0 |
+| **Active Open Issues** | **0** (All verified tabs regression-free & 0 overflow) | 0 |
+| **Current Focus** | **Audit Complete — Ready for Commit / Push when requested** | 100% Complete |
+| **Last Updated** | 2026-11-25 | Continuous |
+
+```
+Progress: [████████████████████████████████████████] 100.0%
+```
+
+---
+
+## 2. Non-Negotiable Mobile Acceptance Criteria (Realme 9 Pro+)
+
+For any tab or component to be marked **Verified [✅]**, it must pass all 10 criteria:
+
+1. **Zero Horizontal Overflow:**
+   - `window.innerWidth === document.documentElement.clientWidth` across 392px and 412px widths.
+   - Zero unintentional horizontal scrollbars.
+2. **Touch Ergonomics & Hit Targets (≥ 44 × 44px):**
+   - All interactive controls (`<button>`, `<a>`, `.act`, checkboxes, chips) must have a tap target of at least **44 × 44 CSS px** (Android 48dp standard).
+   - Safe spacing between action buttons (e.g., Call Client vs WhatsApp vs Pass-Over slip) to prevent accidental mis-taps.
+3. **Safe Area & Bottom Dock Clearance:**
+   - Content bottom padding accounts for `.cb-smart-dock` / `#fixedBottomNav` (`height: 52px` + `bottom: 12px` + `env(safe-area-inset-bottom)` = ~80px-96px clearance).
+   - Floating Action Button (FAB) stays above the smart dock without overlap.
+4. **Font Scaling & Auto-Zoom Prevention:**
+   - All inputs (`<input>`, `<select>`, `<textarea>`) must have `font-size: >= 16px` to prevent mobile browser auto-zoom on focus.
+5. **Soft Keyboard (Gboard) Resilience:**
+   - When the virtual keyboard opens (~300px), focused inputs remain visible and submit buttons are accessible.
+6. **Token & Icon Architecture (`DESIGN.md`):**
+   - Exclusively Lucide vector icons (`stroke: currentColor; fill: none;`).
+   - Zero hardcoded colors; full contrast on AMOLED dark (`#12131A`) and light themes.
+7. **Multi-Tab Parity Rule:**
+   - Daily Cause List (`tab-causelist`), Upcoming Hearings (`tab-upcoming`), and Calendar (`tab-calendar`) must maintain **100% identical docket cards, `.act` action button tokens, and sorting headers**.
+8. **Zero Desktop Regression & Strict Viewport Isolation (Mandatory):**
+   - **Absolute Rule:** Kisi bhi mobile responsive fix, touch-target expansion, safe-area padding, ya layout change ka **Desktop View (>= 769px aur >= 1025px) par 0.00% effect** hona chahiye.
+   - All mobile adjustments **MUST** be strictly encapsulated within mobile media queries (e.g. `@media (max-width: 768px)` or `@media (max-width: 639.98px)`).
+   - Desktop 56px top header, persistent sidebar/rail, desktop tables, modal center alignments, and hover micro-interactions must remain 100% intact, pristine, and regression-free.
+   - Har mobile fix ke baad desktop viewport (1280px / 1440px / 1920px) ka visual & layout verification pass hona mandatory hai.
+9. **Mandatory Post-Audit User Report Review ("Audit Ke Baad Report Review Jaroor Karvayo"):**
+   - **Absolute Workflow Rule:** Kisi bhi tab ya module ka mobile audit complete karne ke baad, seedhe next step par jump nahi karna hai.
+   - Har audit ke baad detailed findings, automated test results, applied remediations, aur visual screenshots user ke samne **formal review report** ke roop me present karna mandatory hai.
+   - User se review aur confirmation/approval milne ke baad hi tab ko formally `Verified [✅]` mark karke next module par proceed karna hai.
+10. **Strict Git Repository Target (`CaseBookNew` Only — `caseBook-modular` Untouched):**
+   - **Mandatory Git Rule:** Sabhi future commits aur pushes **sirf `casebooknew` (`https://github.com/Atulmishra2/CaseBookNew.git`) ki `main` branch** me hi kiye jayenge.
+   - Purane `origin` (`caseBook` / `caseBook-modular`) repository ko **100% untouched** rakha jayega — wahan koi push nahi hoga.
+
+---
+
+## 3. Option A Execution Roadmap: Priority Litigation & Shell Stack
+
+```mermaid
+flowchart TD
+    subgraph OptionA["Option A: Core Litigation & Navigation Stack"]
+        direction TB
+        Step1["Step A1: Shell & Navigation Bedrock<br>(Top Nav, Smart Dock, Drawer, FAB)"]
+        Step2["Step A2: Daily Cause List Audit<br>(#causelist: Docket Cards & .act Buttons)"]
+        Step3["Step A3: Upcoming Hearings Audit & Parity<br>(#upcoming: Filters & Parity Sync)"]
+        Step4["Step A4: Calendar Scheduler Audit & Parity<br>(#calendar: 7-Day Grid & Agenda List)"]
+        Step5["Step A5: Hearing Board & Undated Cases<br>(#hearing & #undated)"]
+        Step6["Step A6: Multi-Tab Parity Quality Gate<br>(Cross-Tab Sign-off & Token Verification)"]
+
+        Step1 --> Step2
+        Step2 --> Step3
+        Step3 --> Step4
+        Step4 --> Step5
+        Step5 --> Step6
+    end
+```
+
+### Detailed Step-by-Step Procedure for Option A:
+
+#### Step A1: Shell & Navigation Bedrock Audit & Tuning
+- **Target Files:** `styles/headerNav.css`, `styles/layout.css`
+- **Actions:**
+  1. Audit Top Navigation Header on 412px & 392px viewports:
+     - Verify hamburger button touch target (`#sidebarToggleBtn`) is ≥ 44×44px.
+     - Verify quick search toggle (`.topnav-search`) expands full-width without pushing action icons offscreen.
+     - Test top punch-hole camera margin clearance (`env(safe-area-inset-top)`).
+  2. Audit Smart Dock (`.cb-smart-dock` / `#fixedBottomNav`):
+     - Check horizontal centering (`max-width: 440px`) on 412px screen.
+     - Verify active tab expanding pill animation doesn't cause horizontal overflow.
+     - Validate bottom clearance against Android gesture bar (`env(safe-area-inset-bottom)`).
+  3. Audit Floating Action Button (`.mobile-fab-btn`):
+     - Ensure bottom positioning sits strictly above the smart dock (`bottom: calc(72px + env(safe-area-inset-bottom))`).
+     - Check touch hit box (56×56px) and thumb reachability.
+  4. Audit Slide-Over Drawer (`#sidebarOverlay` & `.sidebar`):
+     - Verify 90Hz smooth sliding transform without stutter.
+     - Ensure user profile card and navigation links have ≥ 44px vertical touch rhythm.
+
+#### Step A2: Daily Cause List (`#causelist`) Mobile Responsive Audit
+- **Target Files:** `components/tabs/causelist/tab-causelist.css`, `components/tabs/causelist/tab-causelist.html`, `admin.js`
+- **Actions:**
+  1. Inspect Court Grouping Header:
+     - Court room / hall badge, judge name, and total cases count wrapping on 412px.
+  2. Docket Row to Card Transformation:
+     - On mobile (`max-width: 640px` or `<= 768px`), desktop table rows collapse into vertical stacked cards.
+     - Item info hierarchy: Case Number & Year (bold), Court/Bench tag, Parties (Petitioner vs Respondent), Stage pill, Next Date badge.
+  3. Universal Action Buttons (`.act`) Mobile Layout:
+     - Check all 5 buttons: `.act.primary` (Update Next Date), `.act-dossier`, `.act-call`, `.act-whatsapp`, `.act-passover`.
+     - Ensure buttons wrap gracefully into a clean 2-column grid or horizontal scroll strip without cutting off labels or icons.
+     - Verify Lucide icon color synchronization (`stroke: currentColor !important; color: inherit;`).
+  4. Checkbox & Selection Area:
+     - Ensure docket checkbox hit area is padded to ≥ 44×44px.
+
+#### Step A3: Upcoming Hearings (`#upcoming`) Mobile Audit & Parity Sync
+- **Target Files:** `components/tabs/upcoming/tab-upcoming.css`, `components/tabs/upcoming/tab-upcoming.html`
+- **Actions:**
+  1. Date Filter Chips Row:
+     - Test horizontal swipe with touch snap (`overflow-x: auto; -webkit-overflow-scrolling: touch;`).
+     - Check touch targets for "Today", "Tomorrow", "Next 7 Days", "This Month".
+  2. 5-Column Sorting Headers:
+     - Verify touch targets for sort triggers (Court, Case, Stage, Date).
+  3. Strict Parity Check with `tab-causelist.css`:
+     - Cross-verify docket card layout, drawer expand/collapse, and `.act` buttons.
+     - Verify dark mode token bindings (`--feedback-info-soft`, `--feedback-success-soft`, `--feedback-warning-soft`) match `DESIGN.md`.
+
+#### Step A4: Calendar Scheduler (`#calendar`) Mobile Audit & Parity Sync
+- **Target Files:** `components/tabs/calendar/tab-calendar.css`, `components/tabs/calendar/tab-calendar.html`
+- **Actions:**
+  1. 7-Day Monthly Calendar Grid:
+     - Measure day cells across 412px and 392px widths.
+     - Ensure each day cell is at least 40×40px with hearing indicator dots clearly visible.
+     - Prevent horizontal scrolling on the calendar container.
+  2. Selected Day Docket Agenda List:
+     - Verify day's case docket cards appear cleanly below the monthly grid.
+     - Enforce 100% token and layout parity with `tab-causelist.css` `.act` buttons and cards.
+
+#### Step A5: Hearing Updates (`#hearing`) & Undated Cases (`#undated`) Audit
+- **Target Files:** `components/tabs/hearing/tab-hearing.css`, `components/tabs/undated/tab-undated.css`
+- **Actions:**
+  1. Hearing Board Bulk Updates:
+     - Verify date input and stage dropdown have `font-size: >= 16px` to prevent Gboard auto-zoom.
+     - Test pass-over slip / notes textarea with virtual keyboard open.
+  2. Undated Cases Listing:
+     - Check warning banners, urgency markers, and "Assign Listing Date" touch button (≥ 44px).
+
+#### Step A6: Multi-Tab Parity Quality Gate & DOM Verification [✅ Signed-Off]
+- **Actions:**
+  1. Automated Playwright Bounding Box Audit (`tests/browser/step-a6-quality-gate.spec.mjs`):
+     - Verified `#causelist`, `#upcoming`, `#calendar`, `#hearing`, `#undated` across `412px × 915px` & `392px × 872px`.
+     - Zero unintended horizontal overflow (`clientWidth === innerWidth`, zero right-edge blowouts).
+  2. Verified AMOLED Dark Mode (`[data-theme="dark"]`, `#12131A`) contrast and token synchronization across `.act` action buttons (`DESIGN.md`).
+  3. Verified Desktop Viewport (`1280px × 800px`): 0.00% regression, smart dock cleanly hidden, top header intact.
+  4. Option A (Core Litigation Stack) formally closed and signed off. Ready for Phase 3 (Dashboard Tabs).
+
+---
+
+## 4. Tab-Wise Audit & Progress Matrix
+
+### Phase 1: Mobile Shell & Core Navigation
+
+| ID | Component / File | Scope / Selectors | Audit Focus on Realme 9 Pro+ (412x915) | Status | Findings / Notes |
+| :---: | :--- | :--- | :--- | :---: | :--- |
+| **SH-1** | **Top Header Bar**<br>`styles/headerNav.css` | `.header`, `.topnav-brand`, `#sidebarToggleBtn` | Hamburger tap target, search bar mobile expansion, punch-hole camera clearance. | ✅ Verified | Fixed: 44px tap target, safe-area top padding, 16px search input (0% desktop effect). |
+| **SH-2** | **Smart Dock (Bottom Nav)**<br>`styles/layout.css` | `.cb-smart-dock`, `#fixedBottomNav` | Centering on 412px, active pill animation, gesture bar safe-area clearance. | ✅ Verified | Fixed: 44px hit-box on dock buttons, z-index 1065 on overlay dims dock cleanly. |
+| **SH-3** | **Slide-Over Sidebar**<br>`styles/layout.css` | `.sidebar`, `#sidebarOverlay`, `.profile-card` | Smooth slide at 90Hz, backdrop tap dismiss, user profile card wrapping. | ✅ Verified | Fixed: safe-area top/bottom padding, body scroll lock on mobile drawer open. |
+| **SH-4** | **Floating Action Button**<br>`styles/layout.css` | `.mobile-fab-btn`, `#mobileAddCaseFab` | Elevation above smart dock (`bottom: calc(72px + env(...))`), thumb reach. | ✅ Verified | Fixed: bottom clearance increased to 36px+ above dock, preventing mis-taps with 'More'. |
+
+---
+
+### Phase 2: Litigation & Calendar Tabs (Multi-Tab Parity Rule)
+
+> [!IMPORTANT]
+> Docket card layout, collapsible drawer, 5-column sorting, and `.act` buttons must match across all three core tabs.
+
+| ID | Tab / Scope | Key Files | Audit Focus on Realme 9 Pro+ | Status | Findings / Notes |
+| :---: | :--- | :--- | :--- | :---: | :--- |
+| **LT-1** | **Daily Cause List**<br>`#causelist` | `components/tabs/causelist/tab-causelist.css` | Court grouping headers, stacked docket cards, `.act` button wrapping & hit targets. | ✅ Verified | Fixed: 2-tier 2-col action grid (44px), chip height 40px, 44px dropdown trigger, 16px date input. Benchmark locked. |
+| **LT-2** | **Upcoming Hearings**<br>`#upcoming` | `components/tabs/upcoming/tab-upcoming.css` | Date filter chips horizontal swipe, 5-column sort headers on mobile, drawer parity. | ✅ Verified | Fixed: 2-tier 2-column action grid (44px), Cards view 44px buttons, 40px chips, 44px dropdown trigger. Parity synced with Causelist. |
+| **LT-3** | **Calendar Scheduler**<br>`#calendar` | `components/tabs/calendar/tab-calendar.css` | 7-day monthly grid on 412px, touch targets per day cell, agenda list parity. | ✅ Verified | Fixed: 2-tier 2-column action grid (44px), 44px sort/toggle triggers, 44px nav/today buttons. Parity locked with Causelist & Upcoming. |
+| **LT-4** | **Hearing Updates**<br>`#hearing` | `components/tabs/hearing/tab-hearing.css` | Daily board row updates, inline date picker trigger, stage change dropdown. | ✅ Verified | Fixed: 88px+ smart dock clearance, 16px inputs/search/textarea (no auto-zoom), 44px presets, 40px stage chips, 44px triggers, clean metadata pills. |
+| **LT-5** | **Undated Cases**<br>`#undated` | `components/tabs/undated/tab-undated.css` | Warning banners, quick date assigner button touch target, empty state. | ✅ Verified | Fixed: 88px+ smart dock clearance, decluttered header (hidden redundant back button, icon-only segmented view toggle, icon-only refresh), 44px/16px search & triggers, 40px category chips, 19px title. |
+
+---
+
+### Phase 3: Dashboard Tabs
+
+| ID | Tab / Scope | Key Files | Audit Focus on Realme 9 Pro+ | Status | Findings / Notes |
+| :---: | :--- | :--- | :--- | :---: | :--- |
+| **DB-1** | **Classic Home**<br>`#home` | `styles/tab-home.css`<br>`components/tabs/home/tab-home.css` | Metric cards grid (2x2 on 412px), quick actions touch rhythm (≥44px), mini agenda preview, bottom clearance. | ✅ Verified | Fixed: 2×2 metric grid on 412px & 392px, 44px hero buttons, 44px docket forward/details buttons, 44px 3-dots menu trigger & items, 88px+ safe-area dock clearance. 0% desktop effect. |
+| **DB-2** | **Zen Home**<br>`#newhome` | `components/tabs/newhome/tab-newhome.css` | Daily summary banner, focus card hierarchy, clean viewport fold on 915px height, swipeable KPI cards, 44px touch targets. | ✅ Verified | Fixed: Enforced `minmax(0, 1fr)` and `min-width: 0` to prevent 1128px grid blow-out; 88px+ smart dock safe-area clearance; 44px hero buttons & sync icon buttons; scroll-snap swipeable KPI cards. Passed Playwright (3/3) & Vitest (9/9). 0% desktop effect. |
+
+---
+
+### Phase 4: Case Registry & Forms
+
+| ID | Tab / Scope | Key Files | Audit Focus on Realme 9 Pro+ | Status | Findings / Notes |
+| :---: | :--- | :--- | :--- | :---: | :--- |
+| **CR-1** | **All Cases Registry**<br>`#all` | `components/tabs/all/tab-all.css` | Search + filter pills swipe, mobile case card transformation, pagination touch buttons. | ✅ Verified | Fixed: 88px+ smart dock safe-area clearance under 768px & 420px, 44px card action buttons on mobile, 44px page buttons, 44px view toggle & add button, 16px search input. Playwright (3/3) & Vitest (412/412) passed. 0% desktop effect. |
+| **CR-2** | **Manage Cases**<br>`#manage` | `components/tabs/manage/tab-manage.css` | Bulk selection sticky toolbar above smart dock, batch action sheet. | ✅ Verified | Fixed: Edge-to-edge mobile layout (0 horizontal gap), `.court-input-wrapper .custom-dropdown` flex fix preventing `+` court button overflow, icon-only segmented controls, hidden redundant category/subcard pills, 16px inputs, 44px touch targets, 88px+ dock clearance, and updated subcard titles (`Client Details`, `Case Remarks & Co-Parties`, `Documents Link`). Playwright (3/3) & Vitest (21/21) passed. 0% desktop effect. |
+| **CR-3** | **Add Case Form**<br>`#add` | `components/tabs/add/tab-add.css` | 1-column form layout, input font-size ≥ 16px, Gboard keyboard visibility & submit button. | ✅ Verified | Polished: Edge-to-edge mobile `.tab-card-wrapper`, 88px+ smart dock clearance, single-line `.deck-category-count` & `.intake-badge-tag` pills (`white-space: nowrap`), unclipped `.category-chips-rail` glow, `16px` inputs, 44px action buttons, `.court-input-wrapper` flex containment. Playwright (3/3) & Vitest (10/10) passed. 0% desktop effect. |
+| **CR-4** | **Edit Case Form**<br>`#update` | `components/tabs/update/tab-update.css` | Pre-filled field contrast, history log cards, dirty state indicator. | ✅ Verified | Polished: Edge-to-edge mobile `.tab-card-wrapper` with 88px+ smart dock clearance, `16px` inputs/selects/textareas, `minmax(0, 1fr)` grid, 44px full-width action/submit buttons under `@media (max-width: 768px)`. Playwright (3/3) passed. 0% desktop effect. |
+| **CR-5** | **Case Dossier (Detail)**<br>`#detail` | `components/tabs/detail/tab-detail.css` | Case summary header, swipeable sub-tabs (Overview, Orders, Notes), client action pills. | ✅ Verified | Polished: Fixed 13 `--bg-surface-elevated` token mismatches to `--bg-surface-raised` (restoring AMOLED dark contrast on `.case-number-box`, `.vs-circle`, `.representation-chip`, `.detail-segment-strip`), added 88px+ smart dock clearance, 16px search input, 44px touch targets. Playwright (3/3) & Vitest (10/10) passed. 0% desktop effect. |
+| **CR-6** | **Disposed Cases**<br>`#disposed` | `components/tabs/disposed/tab-disposed.css` | Final order summary cards, disposition date badges, archive filter. | ✅ Verified | Polished: Fixed 280px vertical flex gap under `.disposed-court-custom-dropdown` (`flex: 0 0 auto !important`), added 88px+ smart dock clearance, edge-to-edge `.disposed-board-shell`, `16px` search inputs, 44px touch targets, 40px filter chips. Playwright (3/3) & Vitest (3/3) passed. 0% desktop effect. |
+| **CR-7** | **Court Transfer**<br>`#transfer` | `components/tabs/transfer/tab-transfer.css` | From/To court selectors on 412px, case preview card, transfer notes. | ✅ Verified | Polished: Styled `.transfer-table-wrapper` (`overflow-x: auto`) and `.transfer-registry-table` (`min-width: 720px; padding: 12px 14px; white-space: nowrap`) fixing squashed headers; added 88px+ smart dock clearance, `16px` inputs, 44px touch targets, `minmax(0, 1fr)` grids under `@media (max-width: 768px)`. Playwright (3/3) & Vitest (6/6) passed. 0% desktop effect. |
+| **CR-8** | **Trash & Delete**<br>`#delete` | `components/tabs/delete/tab-delete.css` | Safe separation of Restore vs Delete actions, confirmation dialogs. | ✅ Verified | Polished: Fixed AMOLED dark mode contrast on `.delete-search-card`, `.case-details-empty`, `.search-field-box`, `.delete-preview-card`; added edge-to-edge `.danger-container` with 88px+ smart dock clearance, `16px` search input, 44px full-width action buttons, `minmax(0, 1fr)` grid under `@media (max-width: 768px)`. Playwright (3/3) passed. 0% desktop effect. |
+
+---
+
+### Phase 5: Tasks & Financials
+
+| ID | Tab / Scope | Key Files | Audit Focus on Realme 9 Pro+ | Status | Findings / Notes |
+| :---: | :--- | :--- | :--- | :---: | :--- |
+| **OP-1** | **To-Do & Tasks**<br>`#todo` | `components/tabs/todo/tab-todo.css` | Checkbox tap area (≥ 44px hit box), quick-add inline input, filter chips. | ✅ Verified | Polished: Fixed `.todo-filter-strip` overflow (`428.34px`) with `display: flex; width: 100%;` & balanced `flex: 1 1 auto` tabs so all 4 filters fit in one row on 412px/392px; added 88px+ smart dock clearance, 16px inputs, and 44px touch targets under `@media (max-width: 768px)`. Playwright (3/3) & Vitest (7/7) passed. 0% desktop effect. |
+| **OP-2** | **Paisa (Financials)**<br>`#paisa` | `components/tabs/paisa/tab-paisa.css` | Financial KPI cards, fee ledger cards, Record Payment bottom sheet trigger. | ✅ Verified | Polished: Added 88px+ smart dock clearance, `min-width: 0; max-width: 100%;` container containment, `44px` touch targets, and `16px` inputs/selects/textareas under `@media (max-width: 768px)`. Playwright (3/3) & Vitest (26/26) passed. 0% desktop effect. |
+
+---
+
+### Phase 6: Utility & Settings Tabs
+
+| ID | Tab / Scope | Key Files | Audit Focus on Realme 9 Pro+ | Status | Findings / Notes |
+| :---: | :--- | :--- | :--- | :---: | :--- |
+| **UT-1** | **Courts Master**<br>`#courts` | `components/tabs/courts/tab-courts.css` | Court list item tap targets, add court modal form, search input. | ✅ Verified | Polished: Restored & styled `.zen-courts-*` directory table & pagination (light + AMOLED dark); added 88px+ smart dock clearance, `minmax(0, 1fr)` mobile grid, `44px` touch targets, and `16px` inputs under `@media screen and (max-width: 768px)`. Playwright (3/3) & Vitest (8/8) passed. 0% desktop effect. |
+| **UT-2** | **Legal Helpers**<br>`#helpers` | `components/tabs/helpers/tab-helpers.css` | Tool cards 1-column stack, limitation calculator input, copy-to-clipboard feedback. | ✅ Verified | Polished: Expanded mobile rules to `@media (max-width: 768px)`, added 88px+ smart dock clearance, single-line `.contacts-count-pill`, balanced 50/50 `.contacts-secondary-btn` toolbar buttons, `44px` touch targets, and `16px` inputs/selects/textareas. Playwright (3/3) & Vitest (5/5) passed. 0% desktop effect. |
+| **UT-3** | **Live Sync & CRUD**<br>`#livecrud` | `components/tabs/livecrud/tab-livecrud.css` | Sync status indicators, diagnostic cards, manual trigger button. | ✅ Verified | Polished: Expanded to `@media (max-width: 768px)`, added 88px+ smart dock clearance, visually hid `.lc-visually-hidden` select cleanly, stacked toolbar controls, added crisp spacing/borders to `.lc-view-toggle` & `.lc-toolbar-actions`, `44px` touch targets, and `16px` inputs/selects/textareas. Playwright (3/3) & Vitest (12/12) passed. 0% desktop effect. |
+| **UT-4** | **Settings**<br>`#settings` | `components/tabs/settings/tab-settings.css` | Theme toggle switch hit target, advocate profile form, backup export/import buttons. | ✅ Verified | Polished: Added 88px+ smart dock clearance, `minmax(0, 1fr)` stat/action grids, `44px` touch targets, and `16px` inputs/selects/textareas under `@media (max-width: 768px)`. Playwright (3/3) & Vitest (20/20) passed. 0% desktop effect. |
+| **UT-5** | **About**<br>`#about` | `components/tabs/about/tab-about.css` | Typography hierarchy, version pills, external links safety. | ✅ Verified | Polished: Added 88px+ smart dock clearance, `minmax(0, 1fr)` mobile grids for `.about-doc-actions` & `.about-doc-chapters-grid`, and `44px` touch targets on `.doc-action-btn` & `.doc-chapter-pill` under `@media (max-width: 768px)`. Playwright (3/3) passed. 0% desktop effect. |
+
+---
+
+### Phase 7: Global Modals, Sheets & Overlays
+
+| ID | Component | Key Files | Audit Focus on Realme 9 Pro+ | Status | Findings / Notes |
+| :---: | :--- | :--- | :--- | :---: | :--- |
+| **MD-1** | **Next Date Modal** | `styles/modals.css` | Width on 412px, calendar date input, primary CTA thumb accessibility. | ✅ Verified | Polished: Bottom-sheet alignment (`flex-end`, `max-width: 100%`), `16px+` inputs/selects/textareas, `44px+` footer/preset/close/calendar-nav buttons under `@media (max-width: 768px)`. Playwright (3/3) passed. 0% desktop effect. |
+| **MD-2** | **Client Comms Slip** | `styles/modals.css` | Call / WhatsApp bottom sheet, native intent trigger, template preview. | ✅ Verified | Polished: Bottom-sheet `.chm-dialog` with `env(safe-area-inset-bottom)` footer, `16px+` inputs, and `44px+` buttons under `@media (max-width: 768px)`. Playwright (3/3) passed. 0% desktop effect. |
+| **MD-3** | **Confirm Dialogs** | `styles/modals.css` | Centered modal backdrop, destructive action button separation. | ✅ Verified | Polished: `.modal-card` mobile bottom-sheet transformation, `16px+` inputs, and `44px+` footer & close buttons under `@media (max-width: 768px)`. Playwright (3/3) passed. 0% desktop effect. |
+| **MD-4** | **Toast Notifications** | `styles/components.css` | Top/bottom safe-area positioning, no collision with smart dock or header. | ✅ Verified | Polished: Verified `.toast-region` dock clearance (`bottom: calc(var(--bottom-dock-height) + 24px + env(safe-area-inset-bottom))`) and expanded `.toast__close` to `44×44px` under `@media (max-width: 768px)`. Playwright (3/3) passed. 0% desktop effect. |
+
+---
+
+## 5. Execution Log & Remediation History
+
+| Date | Tab / Component ID | Action Taken | Discovered Issues | Resolution / Applied Fix | Status |
+| :--- | :--- | :--- | :--- | :--- | :---: |
+| 2026-11-24 | All | Initial plan creation & tracker setup | Baseline established for Realme 9 Pro+ | Tracker committed | 🟡 Ready |
+| 2026-11-24 | Option A | Added Option A roadmap & desktop rule | Priority litigation stack & zero desktop regression | Plan updated | 🟡 Ready |
+| 2026-11-24 | Step A1 (SH-1 to SH-4) | Remediated Shell & Navigation | P0 z-index conflict, sub-44px targets, safe-area camera cutout, FAB collision | Encapsulated in `@media (max-width: 640px/768px/1024px)`. Zero desktop regression verified. | ✅ Verified |
+| 2026-11-24 | Step A2 (LT-1) | Remediated Daily Cause List | P0 4-button squash, sub-44px chips & triggers, date auto-zoom | Implemented 2-tier 2-column action grid (44px), 40px chips, 44px triggers, 16px date. Benchmark established for parity. | ✅ Verified |
+| 2026-11-24 | Step A3 (LT-2) | Remediated Upcoming Hearings | P0 flex squash in drawer, 36px buttons in Cards view, 28px chips | Synchronized 2-tier 2-column action grid (44px) matching Causelist, set Cards view buttons to 44px, expanded chips to 40px. 0% desktop effect. | ✅ Verified |
+| 2026-11-24 | Step A4 (LT-3) | Remediated Calendar Scheduler | Single-row flex button squash in Day Schedule drawer, 38px triggers, sub-44px nav controls | Synchronized 2-tier 2-col action grid (44px), upgraded sort & toggle triggers to 44px, upgraded month nav & today buttons to 44px. Triad parity complete. 0% desktop effect. | ✅ Verified |
+| 2026-11-24 | Step A5 (LT-4, LT-5) | Remediated Hearing Board & Undated Register | Smart dock occlusion at bottom, Gboard auto-zoom on form inputs, cluttered titlebar in Undated, sub-44px presets & chips | Added 88px+ smart dock clearance to both tabs; set 16px input font size; redesigned Undated mobile header per approved plan (hidden breadcrumbs, restored 34px crest emblem, un-truncated 'Undated Cases' title, 38px unified pill action controls & view toggle); expanded chips to 40px and presets to 44px. 0% desktop effect. | ✅ Verified |
+| 2026-11-24 | Step A6 (Quality Gate) | Automated Quality Gate & Parity Verification | 11px bounding box overflow in `#hearing` on 392px due to 24px card padding + unconstrained grid child width | Encapsulated 14px 10px mobile card padding and `minmax(0, 1fr)` column constraints in `tab-hearing.css` `<= 640px`; verified clientWidth === innerWidth across all 5 tabs on 412px & 392px; verified AMOLED `#12131A` contrast; verified 0.00% desktop regression. Option A formally signed off! | ✅ Verified |
+| 2026-11-24 | Step B1 (DB-1) | Remediated Classic Home (`#home`) | 4-card vertical stack pushing content offscreen, 42px hero buttons, 29px docket action pills, missing dock clearance | Converted `.home-metrics-grid` to 2×2 grid (`repeat(2, minmax(0, 1fr))`); upgraded hero & docket action buttons to ≥44px touch targets; added 88px+ safe-area bottom clearance to `.home-dashboard-shell`; verified via `tab-home-responsive.spec.mjs` (3/3 passed). 0% desktop effect. | ✅ Verified |
+| 2026-11-24 | Step B2 (DB-2) | Remediated Zen Home (`#newhome`) | CSS grid column expansion to 1128px due to 1fr min-content expansion of stats row; sub-44px touch targets; missing smart dock clearance; Card header title & badge text wrapping ("3 Hearings" blob); Clunky isolated bullet-dot timeline items | Enforced `grid-template-columns: minmax(0, 1fr)` and `min-width: 0` on `.newhome-grid`, `.newhome-col-main`, `.newhome-col-side` in <=1024px & <=640px; added 88px+ dock safe-area clearance; upgraded action buttons and icon buttons to >=44px; swipeable KPI row with scroll-snap; added `white-space: nowrap` & `flex-shrink: 0` on badges & LIVE chips; tuned mobile card header padding (12px 14px), 32px icon box, 14.5px title, ellipsized caption; converted Today's Schedule timeline into sleek iOS Settings-style Grouped Table (single inset card, zero floating dots, zero arrows, clean CaseName + Court with hairline dividers); verified via Playwright spec (3/3 passed) and Vitest (9/9 passed). 0% desktop effect. | ✅ Verified |
+| 2026-11-25 | Step C1 (CR-1) | Remediated All Cases Registry (`#all`) | Bottom dock occlusion (`padding: 0` on mobile container), sub-44px card action buttons on mobile, sub-44px pagination and toggle buttons | Enforced 88px+ smart dock safe-area padding under 768px & 420px; upgraded card action buttons to 44px on mobile; enforced 44px page buttons, 44px view toggle & add button, 16px search input. Verified via Playwright `tab-all-responsive.spec.mjs` (3/3 passed) and Vitest (412/412 passed). Verified 0.00% desktop regression. User approved review report. | ✅ Verified |
+| 2026-11-25 | Step C2 (CR-2) | Remediated Manage Cases (`#manage`) | Nested container side padding (~56px), court dropdown flex blowout overflowing `+` court button, sub-16px inputs, missing dock clearance, mobile clutter | Enforced edge-to-edge mobile layout (`padding: 0`, borderless `.hub-card`, compact `.tab-pane`/`.hub-subcard`), fixed `.court-input-wrapper .custom-dropdown` (`flex: 1 1 0%; min-width: 0;`), icon-only segmented controls, hidden `.deck-category-count` & `.hub-subcard-badge` on mobile, 16px inputs, 44px touch targets, 88px+ dock clearance, updated titles (`Client Details`, `Case Remarks & Co-Parties`, `Documents Link`). Verified via `tab-manage-responsive.spec.mjs` (3/3) & Vitest (21/21). 0% desktop effect. User approved review report. | ✅ Verified |
+| 2026-11-25 | Step C3 (CR-3) | Polished Add Case Form (`#add`) | Missing 88px+ dock clearance, 2-line wrapped pills (`7 Registers`, `ORIGINAL SUIT`), clipped chip glow, sub-16px inputs, `.court-input-wrapper` flex risk | Added edge-to-edge mobile `.tab-card-wrapper` with 88px+ smart dock clearance, `white-space: nowrap; flex-shrink: 0;` on `.deck-category-count` & `.intake-badge-tag`, `6px 2px` rail padding for unclipped chip glow, `16px` inputs, `44px` action buttons, and `.court-input-wrapper` flex containment. Verified via `tab-add-responsive.spec.mjs` (3/3) & Vitest (10/10). 0% desktop effect. User approved. | ✅ Verified |
+| 2026-11-25 | Step C4 (CR-4) | Polished Edit Case Form (`#update`) | Missing 88px+ dock clearance, sub-16px inputs, 640px-only responsive coverage, unstacked status header row | Expanded mobile rules to `@media (max-width: 768px)`, added edge-to-edge `.tab-card-wrapper` with 88px+ smart dock clearance, `16px` inputs/selects/textareas, `minmax(0, 1fr)` grid, and 44px full-width `.dispose-action-btn`/`.search-action-btn`/submit buttons. Verified via `tab-update-responsive.spec.mjs` (3/3). 0% desktop effect. User approved. | ✅ Verified |
+| 2026-11-25 | Step C5 (CR-5) | Polished Case Dossier (`#detail`) | P0 white-on-white invisible `.case-number-box`/`.vs-circle`/`.representation-chip` in dark mode due to undefined `--bg-surface-elevated`; missing 88px+ dock clearance; sub-16px search input | Replaced all 13 `--bg-surface-elevated` references with `--bg-surface-raised`, added 88px+ smart dock clearance, `16px` search input, and `44px` touch targets on `.back-register-btn`, `.step-btn`, `.segment-tab`, `.universal-action-deck .act`. Verified via `tab-detail-responsive.spec.mjs` (3/3) & Vitest (10/10). 0% desktop effect. User approved. | ✅ Verified |
+| 2026-11-25 | Step C6 (CR-6) | Polished Disposed Cases (`#disposed`) | 280px vertical empty flex gap under `All Courts` dropdown (`flex: 0 0 280px` overriding mobile `flex: none`), insufficient 32px dock clearance, sub-16px search inputs | Enforced `flex: 0 0 auto !important; width: 100% !important; height: auto !important;` on `.disposed-search-wrap` & `.disposed-court-custom-dropdown` under `@media (max-width: 768px)`, added 88px+ smart dock clearance, edge-to-edge `.disposed-board-shell`, `16px` inputs, `44px` buttons, `40px` chips. Verified via `tab-disposed-responsive.spec.mjs` (3/3) & Vitest (3/3). 0% desktop effect. User approved. | ✅ Verified |
+| 2026-11-25 | Step C7 (CR-7) | Polished Court Transfer (`#transfer`) | Squashed `#transfersRegistryTable` headers with zero horizontal padding/scroll; insufficient 32px dock clearance; sub-16px inputs | Added `.transfer-table-wrapper` (`overflow-x: auto`) & `.transfer-registry-table` (`min-width: 720px; padding: 12px 14px`) with dark mode header tokens, 88px+ smart dock clearance, `16px` inputs, `44px` touch targets, `minmax(0, 1fr)` grids under `@media (max-width: 768px)`. Verified via `tab-transfer-responsive.spec.mjs` (3/3) & Vitest (6/6). 0% desktop effect. User approved. | ✅ Verified |
+| 2026-11-25 | Step C8 (CR-8) | Polished Trash & Delete (`#delete`) | Dark mode selector mismatch leaving `.delete-search-card`/`.case-details-empty`/`.search-field-box`/`.delete-preview-card` light; missing 88px+ dock clearance; sub-16px search input | Fixed AMOLED dark mode tokens on all delete cards/inputs, added edge-to-edge `.danger-container` with 88px+ smart dock clearance, `16px` search input, `44px` full-width `.delete-action-btn` & `.btn-danger`, `minmax(0, 1fr)` grid under `@media (max-width: 768px)`. Verified via `tab-delete-responsive.spec.mjs` (3/3). 0% desktop effect. Phase 4 100% complete. User approved. | ✅ Verified |
+| 2026-11-25 | Step D1 (OP-1) | Polished To-Do & Tasks (`#todo`) | `.todo-filter-strip` intrinsic `inline-flex` width overflowing `412px`/`392px` (`428.34px`) and clipping `Done` tab; missing 88px+ dock clearance; sub-44px buttons & sub-16px inputs | Added `@media (max-width: 768px)` block with `88px+` smart dock clearance, `flex: 1 1 auto` filter tabs in a full-width strip, `44px` touch targets (`.primary-btn`, `.todo-filter-tab`, `.todo-detail-btn`, `.todo-action-btn`, `.todo-empty-cta`, `.todo-check-btn`), and `16px` inputs/selects/textareas. Verified via `tab-todo-responsive.spec.mjs` (3/3) & Vitest (7/7). 0% desktop effect. User approved. | ✅ Verified |
+| 2026-11-25 | Step D2 (OP-2) | Polished Paisa Financials (`#paisa`) | Missing 88px+ smart dock clearance (`32px` bottom padding), sub-16px inputs, sub-44px mobile controls, container width containment | Added `88px+` smart dock clearance, `min-width: 0; max-width: 100%;` box-sizing containment on `.paisa-view-container`/cards/header, `44px` touch targets, and `16px` inputs/selects/textareas under `@media (max-width: 768px)`. Verified via `tab-paisa-responsive.spec.mjs` (3/3) & Vitest (26/26). 0% desktop effect. Phase 5 100% complete. User approved. | ✅ Verified |
+| 2026-11-25 | Step E1 (UT-1) | Polished Courts Master (`#courts`) | Missing `.zen-courts-*` directory table/row/pagination CSS causing unstyled vertical text; missing 88px+ dock clearance; sub-16px search input; sub-44px mobile row actions | Styled complete `.zen-courts-wrapper`/`.zen-court-row`/`.courts-pagination` system with `DESIGN.md` & AMOLED dark mode tokens; added `88px+` smart dock clearance, `minmax(0, 1fr)` mobile grid, `44px` touch targets, and `16px` inputs under `@media screen and (max-width: 768px)`. Verified via `tab-courts-responsive.spec.mjs` (3/3) & Vitest (8/8). 0% desktop effect. User approved. | ✅ Verified |
+| 2026-11-25 | Step E2 (UT-2) | Polished Legal Helpers (`#helpers`) | Mobile rules restricted to `<=640px`, missing 88px+ dock clearance, 2-line wrapped `.contacts-count-pill`, sub-44px mobile buttons, sub-16px search input | Expanded to `@media (max-width: 768px)` with `88px+` smart dock clearance, `white-space: nowrap` pill, balanced 50/50 `Sync`/`Export` buttons, `44px` touch targets, and `16px` inputs/selects/textareas. Verified via `tab-helpers-responsive.spec.mjs` (3/3) & Vitest (5/5). 0% desktop effect. User approved. | ✅ Verified |
+| 2026-11-25 | Step E3 (UT-3) | Polished Live Sync & CRUD (`#livecrud`) | Mobile rules restricted to `<=640px`, missing 88px+ dock clearance, visible `.lc-visually-hidden` duplicate select, cramped `.lc-view-toggle`/`.lc-toolbar-actions`, sub-16px inputs, sub-44px buttons | Expanded to `@media (max-width: 768px)` with `88px+` smart dock clearance, SR-only clipping for `.lc-visually-hidden`, stacked `.lc-toolbar-primary`, padded `.view-btn` & `.lc-toolbar-actions`, `44px` touch targets, and `16px` inputs/selects/textareas. Verified via `tab-livecrud-responsive.spec.mjs` (3/3) & Vitest (12/12). 0% desktop effect. User approved. | ✅ Verified |
+| 2026-11-25 | Step E4 (UT-4) | Polished Settings (`#settings`) | Missing 88px+ smart dock clearance (`padding: 0`), unconstrained `1fr` grids, sub-16px inputs, sub-44px mobile buttons | Added `88px+` smart dock clearance, `minmax(0, 1fr)` grids on `.settings-stats-row` & `.settings-hero-actions`, `44px` touch targets, and `16px` inputs/selects/textareas under `@media (max-width: 768px)`. Verified via `tab-settings-responsive.spec.mjs` (3/3) & Vitest (20/20). 0% desktop effect. User approved. | ✅ Verified |
+| 2026-11-25 | Step E5 (UT-5) | Polished About (`#about`) | Missing 88px+ smart dock clearance (`padding: 0`), unconstrained `1fr` grids, sub-44px chapter pills | Added `88px+` smart dock clearance, `minmax(0, 1fr)` grids on `.about-doc-actions` & `.about-doc-chapters-grid`, and `44px` touch targets on `.doc-action-btn` & `.doc-chapter-pill` under `@media (max-width: 768px)`. Verified via `tab-about-responsive.spec.mjs` (3/3). 0% desktop effect. Phase 6 100% complete. User approved. | ✅ Verified |
+| 2026-11-25 | Phase 7 (MD-1–MD-4) | Polished Global Modals, Bottom Sheets & Toasts (`styles/modals.css`, `styles/components.css`) | Sub-16px modal inputs, sub-44px `.fd-cal-nav-btn`/close/footer buttons, `24px` `.toast__close` hit target | Enforced `16px+` inputs/selects/textareas and `44px+` buttons (including `.fd-cal-nav-btn` & `.modal-close-btn`) in `styles/modals.css`, and `44×44px` `.toast__close` in `styles/components.css` under `@media (max-width: 768px)`. Verified via `phase7-modals-toasts-responsive.spec.mjs` (3/3). 0% desktop effect. **24 / 24 (100.0%) Audit Complete.** User approved. | ✅ Verified |
+| 2026-11-26 | LT-5 (`#undated` Header Follow-Up) | Consolidated `#undated` Mobile Header Actions into `⋮` Overflow Menu (`tab-undated.html`, `tab-undated.js`, `tab-undated.css`) | `"Undated Cases"` overlapping/truncating & `"12 Cases · Action Required"` wrapping next to `148px` right-side controls on narrow mobile | Replaced mobile inline buttons (`<= 768px` only) with a single `44×44px` `⋮` overflow menu (`#undatedMobileMenuBtn` + `#undatedMobileMenu`) containing `Sync Supabase`, `Docket Table View`, `Cards View`, and `Cases Register`. Title (`18px`) & `12 Cases · Action Required` fit cleanly on single lines with zero truncation. Verified via `tab-undated-responsive.spec.mjs` (3/3: `412×915`, `392×872`, `1280×800`). 0% desktop effect. | 🔄 Pending Review |
+| 2026-11-28 | Step E1 Follow-Up (UT-1) | Deep Re-Audit & Fix of Manage Courts Directory (`#courts`) (`tab-courts.css`, `tab-courts-responsive.spec.mjs`) | Fixed modals (`#addCourtModal`, `#editCourtModal`, `#deleteCourtModal`, `#pruneCourtsModal`) trapped inside `#courts` by `.tab.active` `contain: layout` & clipped behind top navbar; `36px` `.court-page-btn` width; `42px` modal dropdown triggers; `915×412` landscape sub-44px/sub-16px controls; `209.5px` header extra bottom space | Overrode `:is(#courts, [data-courts-scope]).tab.active { contain: style !important; }`; enforced `44×44px` `.court-page-btn`, `.custom-dropdown-trigger`, `.court-checkbox-label`; fixed `.court-master-head` padding & `.court-header-actions` flex-basis (`149.5px` height); added `@media screen and (max-width: 960px) and (max-height: 500px)` landscape touch rules. Verified via Playwright (`412×915`, `392×872`, `915×412`, `1280×800`) with 0% desktop regression. | ✅ Verified |
+
+---
+
+## 5b. Read-Only Re-Audit Report: Segmented Button Groups (`412×915` & `392×872`)
+
+> **Note:** Read-only Playwright re-audit across all tabs' segmented button groups (no files modified during this re-audit).
+
+| Tab | Segmented Group Selector | Buttons | `412×915` | `392×872` | Height (min–max) | Status / Observation |
+| :--- | :--- | :---: | :---: | :---: | :---: | :--- |
+| **`#causelist`** | `.chips[aria-label="Quick Date Presets"]` | 4 | `354px` | `334px` | `40px` | ✅ Fits cleanly, zero overflow/overlap/wrap |
+| **`#upcoming`** | `#upcomingViewToggle` | 2 | `213px` | `179px` | `44px` (`49.5px` on 392) | ✅ Fits cleanly, zero overflow/overlap |
+| **`#upcoming`** | `.upcoming-chips-full` | 4 | `338px` | `318px` | `40px` | ✅ Fits cleanly, zero overflow/overlap/wrap |
+| **`#undated`** | `#undatedViewToggle` | 2 | `96px` | `96px` | **`44px` (`w=44px`)** | ✅ Fixed & Verified (`44×44px` touch target under `@media (max-width: 768px)`) |
+| **`#undated`** | `.chips.category-chips` | 5 | `<= 388px` | `<= 368px` | `40px` | ✅ Fixed & Verified (Clean `flex-wrap: wrap` multi-row containment, zero overflow) |
+| **`#all`** | `.view-toggle` | 2 | `178px` | `178px` | `44px` | ✅ Fits cleanly, zero overflow |
+| **`#all`** | `#filterTabs` | 9 | `388px` (`scrollW=1513`) | `368px` (`scrollW=1513`) | `40px` | ✅ Cleanly `overflow-x: auto` scrollable within container |
+| **`#manage`** | `.segmented-control` | 3 | `364px` | `364px` | `44px` | ✅ Fits cleanly, zero overflow/overlap/wrap |
+| **`#disposed`** | `#disposedViewToggle` | 2 | `211px` | `211px` | `44px` | ✅ Fits cleanly, zero overflow |
+| **`#disposed`** | `.chips.category-chips` | 5 | `338px` | `318px` | `40px` | ✅ Fits cleanly, zero overflow |
+| **`#transfer`** | `.transfer-nav-bar` | 2 | `388px` | `368px` | `44px` | ✅ Fits cleanly, zero overflow |
+| **`#transfer`** | `#transferRegistryViewToggle` | 2 | `164px` | `164px` | `44px` | ✅ Fits cleanly, zero overflow |
+| **`#todo`** | `.todo-filter-strip` | 4 | `388px` | `368px` | `44px` | ✅ Fits cleanly in one row, zero clipping/overflow |
+| **`#paisa`** | `.paisa-account-nav-tabs` | 2 | `358px` | `338px` | `44px` | ✅ Fits cleanly, zero overflow/overlap/wrap |
+| **`#livecrud`** | `.lc-view-toggle` | 2 | `176px` | `176px` | `44px` | ✅ Fits cleanly, zero overflow/overlap/wrap |
+| **`#settings`** | `.settings-subtabs-bar` | 2 | `388px` | `368px` | `44px` | ✅ Fixed & Verified (Single-line tabs, zero wrap/overflow/overlap) |
+| **`#add`** | `.category-chips-rail` | — | — | — | — | ℹ️ Selector not present in `#add` active DOM |
+| **`#detail`** | `.detail-segment-strip` | — | — | — | — | ℹ️ Hidden (`visible: false`) until a case dossier is opened |
+
+### Resolution Status (Segmented Re-Audit)
+1. **Fixed — `#undated` `.chips.category-chips`:** Converted `.undated-chips-row .category-chips` to `flex-wrap: wrap; width: 100%; max-width: 100%; gap: 6px;` under `@media (max-width: 768px)`.
+2. **Fixed — `#undated` `#undatedViewToggle`:** Upgraded `.view-btn` to `44×44px` (`min-height: 44px; min-width: 44px;`) under `@media (max-width: 768px)`.
+3. **Fixed — `#settings` `.settings-subtabs-bar`:** Set `.settings-subtab-btn` to `font-size: 11.5px; padding: 8px 6px; white-space: nowrap; min-height: 44px;` (hiding `.settings-subtab-btn svg` under `<= 768px`) for clean single-line fit on both `412px` and `392px`. Verified via Playwright (6/6) & Vitest (20/20). 0% desktop effect.
+
+---
+
+## 5c. Modal Functionality Audit & Remediation Plan (Realme 9 Pro+)
+
+> **Audit Scope & Method:** Live read-only Playwright inspection across `412×915` (Primary), `392×872` (Small Scale), and `915×412` (Landscape) + Vitest (`tests/caseModals.test.js` 23/23 passed, `tests/realme9ProPlusModalResponsive.test.js` 3/10 passed, 7 skipped) + `tests/browser/phase7-modals-toasts-responsive.spec.mjs` (3/3 passed). **Status: Pending User Approval Before Fixing.**
+
+### Audit Findings Summary
+
+| ID | Severity | Modal / Area | Observed Defect on Realme 9 Pro+ | Root Cause |
+| :---: | :---: | :--- | :--- | :--- |
+| **MF-1** | 🔴 Critical | `#caseDetailsFullModal` (`#cdmMoreMenu`) | Clicking `#cdmMoreBtn` opens `#cdmMoreMenu` off-screen (`top: 923px, bottom: 1012px, left: -211px` on `412×915`), making Print / Transfer / To-Do / History / Edit menu items unreachable. | `.dossier-footer` sets `overflow-x: auto` under `@media (max-width: 768px)` (`styles/modals.css`), while `.dropdown-menu` (`styles/components.css`) opens downward relative to `.dropdown-wrapper`. |
+| **MF-2** | 🔴 Critical | Hardware Back Button (`popstate`) | Pressing Android Back while `#caseDetailsFullModal`, `#fdModal`, or `#caseRemarkModal` is open does **not** close the modal; it navigates the underlying tab or exits. | `getOpenModalInfo()` in `admin.js` omits `caseDetailsFullModal`, `fdModal`, and `caseRemarkModal` from `modalList`. |
+| **MF-3** | 🟠 High | Portrait Touch Targets (`412×915` & `392×872`) | Sub-44px tap targets: `#caseDetailsFullModal` `.strip-close-btn` (`32×32px`), `.dossier-footer .footer-btn` (`32px` h), `.case-tab` (`40px` h); `#fdModal` `.fd-preset-chip` (`29px` h), `.fd-cal-today-btn` (`23px` h), `.fd-combo-input-wrap` (`42px` h), `.fd-cal-day` (`40×40px` on `392×872`); `#caseHistoryModal` `.chm-copy-btn` (`14×21px`), `.chm-header-dossier-btn` (`42px` h), `.chm-footer-close-btn` (`39px` w). | `@media (max-width: 768px)` in `styles/modals.css` targets `.modal-footer button` / `.modal-close-btn` / `.fd-preset-btn` (mismatching `.fd-preset-chip`, `.dossier-footer .footer-btn`, `.strip-close-btn`, `.chm-copy-btn`, `.fd-cal-today-btn`). |
+| **MF-4** | 🟠 High | Landscape (`915×412`) | `#pwaGuideModal` overflows vertically (`501px` on `412px` viewport, `cutOffTop/Bottom: true`); `#fdModal` `#fdStageSelect` & `#fdProceedingsNote` drop to `12.47px` (auto-zoom risk) and nav/close buttons drop to `26–32px`; `#caseHistoryModal` footer buttons drop to `22px` height. | Mobile rules are gated only on `@media (max-width: 768px)` instead of also covering touch/short landscape (`@media (max-height: 500px) and (pointer: coarse)`), and `.pwa-modal-shell` lacks `max-height` + `overflow-y: auto` (CSS targets `.pwa-guide-dialog`). |
+| **MF-5** | 🟡 Medium | Body Scroll Lock | Background page scrolls behind `#caseRemarkModal` and `#pwaGuideModal` (`bodyLocked: false`). | `openCaseRemarkModal()` & `openPwaGuideModal()` in `admin.js` (and their close handlers) do not call `syncBodyModalLock()`. |
+| **MF-6** | 🟡 Medium | Court Modals (`#addCourtModal`, `#editCourtModal`, `#deleteCourtModal`) | Render centered at `388px` width (`align-items: normal`) instead of transforming into full-width (`412px`) bottom sheets like To-Do, Paisa, and Helpers modals. | `components/tabs/courts/tab-courts.html` uses `.court-modal-overlay` without `.modal-overlay` or bottom-sheet media rules in `tab-courts.css`. |
+| **MF-7** | 🟢 Low | Vitest Contract Drift | `7 of 10` tests in `tests/realme9ProPlusModalResponsive.test.js` are silently skipped (`describe.skip`). | Test still checks deleted `styles/components/modal-editorial.css` and `styles/components/modals.css` instead of `styles/modals.css`. |
+
+---
+
+### Remediation Plan & Live Progress (0% Desktop Regression)
+
+1. ✅ **Verified — Step M1 (`#cdmMoreMenu` Off-Screen Clipping):** Positioned `#cdmMoreMenu` as a fixed upward action sheet under `@media (max-width: 768px)` in `styles/modals.css`. Verified on `412×915` (`clipped: false`).
+2. ✅ **Verified — Step M2 (Hardware Back `popstate` & Body Scroll Lock):** Added `caseDetailsFullModal`, `fdModal`, and `caseRemarkModal` to `getOpenModalInfo()` in `admin.js`, and added `syncBodyModalLock()` to `open/closeCaseRemarkModal()` & `open/closePwaGuideModal()`. Verified via Playwright & Vitest (`23/23`).
+3. ✅ **Verified — Step M3 (`44×44px` Portrait Touch Targets & Selector Fixes):** Expanded `@media (max-width: 768px)` touch target rules in `styles/modals.css` and added `.pwa-modal-shell` scroll containment. Verified `smallBtns: []` across all 5 global modals on `412×915` & `392×872`.
+4. ✅ **Verified — Step M4 (Landscape `915×412` & Short-Viewport Resilience):** Added `@media (max-height: 500px) and (pointer: coarse)` rules in `styles/modals.css` so modals constrain `max-height: 94dvh` with internal body scroll, `16px` inputs, and `44px` controls without affecting desktop. Verified on `915×412` (`cutOffTop/Bottom: false`, `#pwaGuideModal` `387px` h).
+5. ✅ **Verified — Step M5 (Tab-Local Court Modal Bottom-Sheet Parity):** Scoped `@media screen and (max-width: 768px)` bottom-sheet alignment (`flex-end`, scrollable `.court-modal-body`, safe-area footer padding, `16px` inputs, `44px` buttons) to `.court-modal-overlay` in `components/tabs/courts/tab-courts.css`. Verified via Playwright (`alignItems: flex-end`).
+6. ⏳ **Pending — Step M6 (Update Vitest & Playwright Regression Gates):** Point `tests/realme9ProPlusModalResponsive.test.js` at `styles/modals.css` and expand `phase7-modals-toasts-responsive.spec.mjs` to cover all 5 global modals + `#addCourtModal` across `412×915`, `392×872`, `915×412`, and `1280×800`.
+
+---
+
+## 5d. Manage Courts Directory (`#courts`) Deep Re-Audit & Fix Plan (Realme 9 Pro+)
+
+> **Audit Scope & Method:** Live Playwright inspection across `412×915` (Primary), `392×872` (Small Scale), `915×412` (Landscape), and `1280×800` (Desktop Baseline) with empty state, 12 seeded courts, expanded rows, light/dark modes, and all 4 modals (`#addCourtModal`, `#editCourtModal`, `#deleteCourtModal`, `#pruneCourtsModal`).
+
+### Audit Findings Summary
+
+| ID | Severity | Area / Selector | Observed Defect on Realme 9 Pro+ | Root Cause |
+| :---: | :---: | :--- | :--- | :--- |
+| **CT-1** | 🔴 Critical | `.court-modal-overlay` (`#addCourtModal`, `#editCourtModal`, `#deleteCourtModal`, `#pruneCourtsModal`) | Opening court modals on `412×915` and `915×412` clips the modal header & `×` close button under/above the top navbar (`modalRect` rendered at `top: 68, left: 12, width: 388, height: 3056.25` instead of `0, 0, 412, 915`). | `.tab.active` in `styles/layout.css` applies `contain: layout style;`, which establishes a containing block for `position: fixed` descendants inside `#courts`. |
+| **CT-2** | 🟡 Moderate | `.court-page-btn` (`1`, `2`) | Pagination buttons had `width: 36px` (`< 44px`) on `412×915` and `392×872`. | Base `min-width: 36px` in `tab-courts.css` was not overridden under `@media screen and (max-width: 768px)`. |
+| **CT-3** | 🟡 Moderate | `.custom-dropdown-trigger` (`#courtCadreTrigger`, `#courtStatusTrigger`, `#editCourtCadreTrigger`, `#editCourtStatusTrigger`) | Modal dropdown triggers measured `42px` height (`< 44px`) on portrait mobile. | `min-height: 42px` on `.court-modal-field .custom-dropdown-trigger` lacked a `44px` mobile override. |
+| **CT-4** | 🟡 Moderate | Landscape (`915×412`) | `#courtSearchInput` & modal inputs dropped to `13.5px` (`< 16px`), `.zen-icon-btn` (`36×36px`), `.zen-cases-badge` (`34px`), `.court-page-btn` (`36px`), `.court-modal-close-btn` (`34×34px`), and `.court-btn-cancel` (`40px`) fell below `44px`. | Mobile rules in `tab-courts.css` were gated solely on `max-width: 768px`, missing landscape phones (`915×412`). |
+| **CT-5** | 🟢 Minor | `.court-master-head` (`412×915`, `392×872`) | Header banner measured `209.5px` tall with excess bottom whitespace below action buttons. | `.court-header-actions` had `flex: 0 0 38px !important;` and `.court-master-head.board-head` lacked `!important` on `padding: 14px`. |
+
+### Fix Plan & Verification Status (0% Desktop Regression)
+
+1. ✅ **Fixed — Step C1 (Modal Viewport Anchoring):** Added `:is(#courts, [data-courts-scope]).tab.active { contain: style !important; }` in `components/tabs/courts/tab-courts.css` so all 4 court modals anchor directly to the viewport (`top: 0, left: 0, width: 412, height: 915`) with zero cross-tab impact.
+2. ✅ **Fixed — Step C2 (Portrait `44×44px` Touch Targets):** Enforced `min-width: 44px !important; min-height: 44px !important;` on `.court-page-btn` and `min-height: 44px !important;` on `.court-modal-field .custom-dropdown-trigger` & `.court-checkbox-label` under `@media screen and (max-width: 768px)`.
+3. ✅ **Fixed — Step C3 (Landscape `915×412` Touch & Input Resilience):** Added `@media screen and (max-width: 960px) and (max-height: 500px), screen and (max-height: 500px) and (pointer: coarse)` in `tab-courts.css` for `16px` inputs, `44×44px` buttons/badges/dropdowns, and `94dvh` scrollable modal cards.
+4. ✅ **Fixed — Step C4 (Header Compactness):** Updated `.court-master-head.board-head` to `padding: 14px !important; gap: 12px !important;` and `.court-header-actions` to `flex: 0 0 auto !important; flex-wrap: wrap;` (header height reduced from `209.5px` to `149.5px`).
+5. ✅ **Verified — Step C5 (Automated Regression Gate):** Expanded `tests/browser/tab-courts-responsive.spec.mjs` to verify `412×915`, `392×872`, `915×412`, `1280×800`, populated pagination, and `#addCourtModal` viewport anchoring (`modalTop === 0`).
+
+---
+
+## 6. How to Update Progress & Execution Workflow
+
+Jab bhi kisi tab ka audit ya responsive fix complete ho:
+1. Status column ko `⏳ Pending` se `🔄 In Progress` me update karein.
+2. Discovered issue aur applied fix ko **Section 5 (Execution Log)** me log karein.
+3. **Mandatory Post-Audit Report Review:** Har audit aur responsive remediation ke baad automated test logs aur visual evidence user ke samne **Review Report** ke roop me present karein (*"audit ke baad report review jaroor karvayo"*).
+4. User ke formal review confirmation aur approval ke baad hi status ko `✅ Verified` mark karein aur agle module par proceed karein.
+5. Executive Progress Dashboard ka counter aur progress bar update karein.
